@@ -446,6 +446,47 @@ public class RemovalTimeStrategyStartTest extends AbstractRemovalTimeTest {
   }
 
   @Test
+  public void shouldResolveHistoricTaskAuthorization() {
+    // given
+    processEngineConfiguration.setEnableHistoricInstancePermissions(true);
+
+    ClockUtil.setCurrentTime(START_DATE);
+
+    testRule.deploy(CALLING_PROCESS);
+
+    testRule.deploy(CALLED_PROCESS);
+
+    runtimeService.startProcessInstanceByKey(CALLING_PROCESS_KEY);
+
+    String taskId = taskService.createTaskQuery().singleResult().getId();
+
+    Authorization authorization =
+        authorizationService.createNewAuthorization(Authorization.AUTH_TYPE_GRANT);
+
+    authorization.setUserId("myUserId");
+    authorization.setResource(Resources.HISTORIC_TASK);
+    authorization.setResourceId(taskId);
+
+    // when
+    authorizationService.saveAuthorization(authorization);
+
+    authorization = authorizationService.createAuthorizationQuery()
+        .resourceType(Resources.HISTORIC_TASK)
+        .singleResult();
+
+    // assume
+    assertThat(authorization, notNullValue());
+
+    Date removalTime = addDays(START_DATE, 5);
+
+    // then
+    assertThat(authorization.getRemovalTime(), is(removalTime));
+
+    // clear
+    clearAuthorization();
+  }
+
+  @Test
   public void shouldWriteHistoryAndResolveHistoricTaskAuthorizationInDifferentTransactions() {
     // given
     processEngineConfiguration.setEnableHistoricInstancePermissions(true);
