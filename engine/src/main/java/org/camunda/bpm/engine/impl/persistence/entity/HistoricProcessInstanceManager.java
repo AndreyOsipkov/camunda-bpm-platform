@@ -241,6 +241,9 @@ public class HistoricProcessInstanceManager extends AbstractHistoricManager {
     commandContext.getByteArrayManager()
       .addRemovalTimeToByteArraysByProcessInstanceId(processInstanceId, removalTime);
 
+    commandContext.getAuthorizationManager()
+        .addRemovalTimeToAuthorizationsByProcessInstanceId(processInstanceId, removalTime);
+
     Map<String, Object> parameters = new HashMap<>();
     parameters.put("processInstanceId", processInstanceId);
     parameters.put("removalTime", removalTime);
