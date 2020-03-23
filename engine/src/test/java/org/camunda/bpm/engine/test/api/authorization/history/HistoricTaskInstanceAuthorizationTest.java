@@ -561,6 +561,9 @@ public class HistoricTaskInstanceAuthorizationTest extends AuthorizationTest {
         HistoricTaskPermissions.READ, Resources.HISTORIC_TASK));
 
     assertTrue(authorizationService.isUserAuthorized(userId, null,
+        HistoricTaskPermissions.READ_VARIABLE, Resources.HISTORIC_TASK));
+
+    assertTrue(authorizationService.isUserAuthorized(userId, null,
         HistoricTaskPermissions.ALL, Resources.HISTORIC_TASK));
   }
 

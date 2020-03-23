@@ -708,9 +708,16 @@ public class AuthorizationManager extends AbstractManager {
   // historic variable instance query ////////////////////////////////
 
   public void configureHistoricVariableInstanceQuery(HistoricVariableInstanceQueryImpl query) {
-    Permission readPermission = READ_HISTORY;
+    Permission runtimeReadPermission = null;
+    Permission historyReadPermission = null;
     if (isEnsureSpecificVariablePermission()) {
-      readPermission = READ_HISTORY_VARIABLE;
+      runtimeReadPermission = READ_HISTORY_VARIABLE;
+      historyReadPermission = HistoricTaskPermissions.READ_VARIABLE;
+
+    } else {
+      runtimeReadPermission = READ_HISTORY;
+      historyReadPermission = HistoricTaskPermissions.READ;
+
     }
 
     AuthorizationCheck authCheck = query.getAuthCheck();
@@ -719,15 +726,15 @@ public class AuthorizationManager extends AbstractManager {
     authCheck.setHistoricInstancePermissionsEnabled(isHistoricInstancePermissionsEnabled);
 
     if (!isHistoricInstancePermissionsEnabled) {
-      configureQuery(query, PROCESS_DEFINITION, "RES.PROC_DEF_KEY_", readPermission);
+      configureQuery(query, PROCESS_DEFINITION, "RES.PROC_DEF_KEY_", runtimeReadPermission);
 
     } else {
       configureQuery(query);
 
       CompositePermissionCheck permissionCheck = new PermissionCheckBuilder()
           .disjunctive()
-          .atomicCheck(PROCESS_DEFINITION, "RES.PROC_DEF_KEY_", readPermission)
-          .atomicCheck(HISTORIC_TASK, "TI.ID_", HistoricTaskPermissions.READ)
+          .atomicCheck(PROCESS_DEFINITION, "RES.PROC_DEF_KEY_", runtimeReadPermission)
+          .atomicCheck(HISTORIC_TASK, "TI.ID_", historyReadPermission)
           .build();
 
       addPermissionCheck(authCheck, permissionCheck);

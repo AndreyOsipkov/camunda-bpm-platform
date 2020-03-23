@@ -17,6 +17,7 @@
 package org.camunda.bpm.engine.test.api.authorization;
 
 import static org.camunda.bpm.engine.authorization.Permissions.UPDATE;
+import static org.camunda.bpm.engine.authorization.Resources.HISTORIC_TASK;
 import static org.camunda.bpm.engine.authorization.Resources.TASK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -28,6 +29,7 @@ import org.camunda.bpm.engine.IdentityService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.authorization.Authorization;
+import org.camunda.bpm.engine.authorization.HistoricTaskPermissions;
 import org.camunda.bpm.engine.authorization.Permission;
 import org.camunda.bpm.engine.authorization.Permissions;
 import org.camunda.bpm.engine.authorization.Resources;
@@ -67,6 +69,7 @@ public class TaskReadVariablePermissionAuthorizationTest {
   private RuntimeService runtimeService;
 
   private boolean enforceSpecificVariablePermission;
+  protected boolean enableHistoricInstancePermissions;
 
   @Before
   public void init() {
@@ -78,6 +81,7 @@ public class TaskReadVariablePermissionAuthorizationTest {
 
     enforceSpecificVariablePermission = processEngineConfiguration.isEnforceSpecificVariablePermission();
     processEngineConfiguration.setEnforceSpecificVariablePermission(true);
+    processEngineConfiguration.setEnableHistoricInstancePermissions(true);
 
     User user = identityService.newUser(userId);
     identityService.saveUser(user);
@@ -98,6 +102,7 @@ public class TaskReadVariablePermissionAuthorizationTest {
       authorizationService.deleteAuthorization(authorization.getId());
     }
     processEngineConfiguration.setEnforceSpecificVariablePermission(enforceSpecificVariablePermission);
+    processEngineConfiguration.setEnableHistoricInstancePermissions(enableHistoricInstancePermissions);
   }
 
   // TaskService#saveTask() ///////////////////////////////////
@@ -326,22 +331,41 @@ public class TaskReadVariablePermissionAuthorizationTest {
 
   protected void verifyUserAuthorization(String userId) {
     authRule.disableAuthorization();
-    Authorization userAuthorization = authorizationService.createAuthorizationQuery().userIdIn(userId).singleResult();
-    assertNotNull(userAuthorization);
-    verifyReadVariablePermission(userAuthorization);
+    Authorization runtimeUserAuthorization = authorizationService.createAuthorizationQuery()
+        .resourceType(TASK)
+        .userIdIn(userId)
+        .singleResult();
+    assertNotNull(runtimeUserAuthorization);
+    verifyReadVariablePermission(runtimeUserAuthorization, TaskPermissions.READ_VARIABLE);
+
+    Authorization historyUserAuthorization = authorizationService.createAuthorizationQuery()
+        .resourceType(HISTORIC_TASK)
+        .userIdIn(userId)
+        .singleResult();
+    assertNotNull(historyUserAuthorization);
+    verifyReadVariablePermission(historyUserAuthorization, HistoricTaskPermissions.READ_VARIABLE);
   }
 
   protected void verifyGroupAuthorization(String groupId) {
     authRule.disableAuthorization();
-    Authorization groupAuthorization = authorizationService.createAuthorizationQuery().groupIdIn(groupId).singleResult();
-    assertNotNull(groupAuthorization);
-    verifyReadVariablePermission(groupAuthorization);
+    Authorization runtimeGroupAuthorization = authorizationService.createAuthorizationQuery()
+        .resourceType(TASK)
+        .groupIdIn(groupId).singleResult();
+    assertNotNull(runtimeGroupAuthorization);
+    verifyReadVariablePermission(runtimeGroupAuthorization, TaskPermissions.READ_VARIABLE);
+
+    Authorization historyGroupAuthorization = authorizationService.createAuthorizationQuery()
+        .resourceType(HISTORIC_TASK)
+        .groupIdIn(groupId).singleResult();
+    assertNotNull(historyGroupAuthorization);
+    verifyReadVariablePermission(historyGroupAuthorization, HistoricTaskPermissions.READ_VARIABLE);
   }
 
-  protected void verifyReadVariablePermission(Authorization groupAuthorization) {
-    Permission[] permissions = groupAuthorization.getPermissions(new Permission[] { TaskPermissions.READ_VARIABLE });
+  protected void verifyReadVariablePermission(Authorization groupAuthorization,
+                                              Permission expectedPermission) {
+    Permission[] permissions = groupAuthorization.getPermissions(new Permission[] { expectedPermission });
     assertNotNull(permissions);
-    assertEquals(TaskPermissions.READ_VARIABLE, permissions[0]);
+    assertEquals(expectedPermission, permissions[0]);
   }
 
 }

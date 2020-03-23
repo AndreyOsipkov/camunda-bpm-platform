@@ -278,8 +278,8 @@ public class DefaultAuthorizationProvider implements ResourceAuthorizationProvid
     AuthorizationEntity runtimeAuthorization = getGrantAuthorization(taskId, userId, groupId, TASK);
 
     runtimeAuthorization =
-        updateAuthorization(runtimeAuthorization, userId, groupId, TASK, taskId, READ,
-            getDefaultUserPermissionForTask(), getSpecificReadVariablePermission());
+        updateAuthorization(runtimeAuthorization, userId, groupId, TASK, taskId,
+            getRuntimePermissions());
 
     if (!isHistoricInstancePermissionsEnabled()) {
       return new AuthorizationEntity[]{ runtimeAuthorization };
@@ -289,11 +289,34 @@ public class DefaultAuthorizationProvider implements ResourceAuthorizationProvid
           groupId, HISTORIC_TASK);
 
       historyAuthorization =
-          updateAuthorization(historyAuthorization, userId, groupId, HISTORIC_TASK,
-              taskId, HistoricTaskPermissions.READ);
+          updateAuthorization(historyAuthorization, userId, groupId, HISTORIC_TASK, taskId,
+              getHistoricPermissions());
 
       return new AuthorizationEntity[]{ runtimeAuthorization, historyAuthorization };
     }
+  }
+
+  protected List<Permission> getHistoricPermissions() {
+    List<Permission> historicPermissions = new ArrayList<>();
+    historicPermissions.add(HistoricTaskPermissions.READ);
+
+    if (isEnforceSpecificVariablePermission()) {
+      historicPermissions.add(HistoricTaskPermissions.READ_VARIABLE);
+    }
+
+    return historicPermissions;
+  }
+
+  protected List<Permission> getRuntimePermissions() {
+    List<Permission> runtimePermissions = new ArrayList<>();
+    runtimePermissions.add(READ);
+    runtimePermissions.add(getDefaultUserPermissionForTask());
+
+    if (isEnforceSpecificVariablePermission()) {
+      runtimePermissions.add(TaskPermissions.READ_VARIABLE);
+    }
+
+    return runtimePermissions;
   }
 
   protected boolean isHistoricInstancePermissionsEnabled() {
@@ -326,7 +349,10 @@ public class DefaultAuthorizationProvider implements ResourceAuthorizationProvid
     return authorizationManager.findAuthorizationByGroupIdAndResourceId(AUTH_TYPE_GRANT, groupId, resource, resourceId);
   }
 
-  protected AuthorizationEntity updateAuthorization(AuthorizationEntity authorization, String userId, String groupId, Resource resource, String resourceId, Permission... permissions) {
+  protected AuthorizationEntity updateAuthorization(AuthorizationEntity authorization,
+                                                    String userId, String groupId,
+                                                    Resource resource, String resourceId,
+                                                    List<Permission> permissions) {
     if (authorization == null) {
       authorization = createGrantAuthorization(userId, groupId, resource, resourceId);
       updateAuthorizationBasedOnCacheEntries(authorization, userId, groupId, resource, resourceId);
@@ -373,10 +399,9 @@ public class DefaultAuthorizationProvider implements ResourceAuthorizationProvid
       .getDefaultUserPermissionForTask();
   }
 
-  protected Permission getSpecificReadVariablePermission() {
-    return Context
-      .getProcessEngineConfiguration()
-      .isEnforceSpecificVariablePermission() ? TaskPermissions.READ_VARIABLE : null;
+  protected boolean isEnforceSpecificVariablePermission() {
+    return Context.getProcessEngineConfiguration()
+        .isEnforceSpecificVariablePermission();
   }
 
   /**
