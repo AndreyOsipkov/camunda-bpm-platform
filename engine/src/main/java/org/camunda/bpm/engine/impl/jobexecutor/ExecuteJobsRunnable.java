@@ -42,6 +42,8 @@ public class ExecuteJobsRunnable implements Runnable {
   protected JobExecutor jobExecutor;
   protected ProcessEngineImpl processEngine;
 
+  protected JobFailureCollector jobFailureCollector;
+
   public ExecuteJobsRunnable(List<String> jobIds, ProcessEngineImpl processEngine) {
     this.jobIds = jobIds;
     this.processEngine = processEngine;
@@ -66,9 +68,9 @@ public class ExecuteJobsRunnable implements Runnable {
 
         String nextJobId = currentProcessorJobQueue.remove(0);
         if (jobExecutor.isActive()) {
-          JobFailureCollector jobFailureCollector = new JobFailureCollector(nextJobId);
           try {
-            ExecuteJobHelper.executeJob(nextJobId, commandExecutor, jobFailureCollector, new ExecuteJobsCmd(nextJobId, jobFailureCollector), engineConfiguration);
+            jobFailureCollector = new JobFailureCollector(nextJobId);
+            executeJob(nextJobId, commandExecutor);
           } catch(Throwable t) {
             if (ProcessEngineLogger.shouldLogJobException(engineConfiguration, jobFailureCollector.getJob())) {
               ExecuteJobHelper.LOGGING_HANDLER.exceptionWhileExecutingJob(nextJobId, t);
@@ -107,7 +109,7 @@ public class ExecuteJobsRunnable implements Runnable {
    * org.camunda.bpm.container.impl.threading.ra.inflow.JcaInflowExecuteJobsRunnable.executeJob(String, CommandExecutor)
    */
   protected void executeJob(String nextJobId, CommandExecutor commandExecutor) {
-    ExecuteJobHelper.executeJob(nextJobId, commandExecutor);
+    ExecuteJobHelper.executeJob(nextJobId, commandExecutor, jobFailureCollector, new ExecuteJobsCmd(nextJobId, jobFailureCollector), processEngine.getProcessEngineConfiguration());
   }
 
   protected void unlockJob(String nextJobId, CommandExecutor commandExecutor) {
