@@ -17,6 +17,7 @@
 package org.camunda.bpm.engine.rest.dto.runtime;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.dto.AbstractQueryDto;
 import org.camunda.bpm.engine.rest.dto.CamundaQueryParam;
+import org.camunda.bpm.engine.rest.dto.converter.DateConverter;
 import org.camunda.bpm.engine.rest.dto.converter.StringArrayConverter;
 import org.camunda.bpm.engine.rest.dto.converter.StringListConverter;
 import org.camunda.bpm.engine.runtime.IncidentQuery;
@@ -70,10 +72,13 @@ public class IncidentQueryDto extends AbstractQueryDto<IncidentQuery>{
   protected String incidentId;
   protected String incidentType;
   protected String incidentMessage;
+  protected String incidentMessageLike;
   protected String processDefinitionId;
   protected String[] processDefinitionKeyIn;
   protected String processInstanceId;
   protected String executionId;
+  protected Date incidentTimestampBefore;
+  protected Date incidentTimestampAfter;
   protected String activityId;
   protected String causeIncidentId;
   protected String rootCauseIncidentId;
@@ -102,6 +107,11 @@ public class IncidentQueryDto extends AbstractQueryDto<IncidentQuery>{
     this.incidentMessage = incidentMessage;
   }
 
+  @CamundaQueryParam("incidentMessageLike")
+  public void setIncidentMessageLike(String incidentMessageLike) {
+    this.incidentMessageLike = incidentMessageLike;
+  }
+
   @CamundaQueryParam("processDefinitionId")
   public void setProcessDefinitionId(String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
@@ -120,6 +130,16 @@ public class IncidentQueryDto extends AbstractQueryDto<IncidentQuery>{
   @CamundaQueryParam("executionId")
   public void setExecutionId(String executionId) {
     this.executionId = executionId;
+  }
+
+  @CamundaQueryParam(value="incidentTimestampBefore", converter= DateConverter.class)
+  public void setIncidentTimestampBefore(Date setIncidentTimestampBefore) {
+    this.incidentTimestampBefore = incidentTimestampBefore;
+  }
+
+  @CamundaQueryParam(value="incidentTimestampAfter", converter= DateConverter.class)
+  public void setIncidentTimestampAfter(Date incidentTimestampAfter) {
+    this.incidentTimestampAfter = incidentTimestampAfter;
   }
 
   @CamundaQueryParam("activityId")
@@ -174,6 +194,9 @@ public class IncidentQueryDto extends AbstractQueryDto<IncidentQuery>{
     if (incidentMessage != null) {
       query.incidentMessage(incidentMessage);
     }
+    if (incidentMessageLike != null) {
+      query.incidentMessageLike(incidentMessageLike);
+    }
     if (processDefinitionId != null) {
       query.processDefinitionId(processDefinitionId);
     }
@@ -185,6 +208,12 @@ public class IncidentQueryDto extends AbstractQueryDto<IncidentQuery>{
     }
     if (executionId != null) {
       query.executionId(executionId);
+    }
+    if (incidentTimestampBefore != null) {
+      query.incidentTimestampBefore(incidentTimestampBefore);
+    }
+    if (incidentTimestampAfter != null) {
+      query.incidentTimestampAfter(incidentTimestampAfter);
     }
     if (activityId != null) {
       query.activityId(activityId);
