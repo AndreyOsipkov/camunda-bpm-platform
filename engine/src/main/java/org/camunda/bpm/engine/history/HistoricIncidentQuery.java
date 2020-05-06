@@ -18,6 +18,8 @@ package org.camunda.bpm.engine.history;
 
 import org.camunda.bpm.engine.query.Query;
 
+import java.util.Date;
+
 /**
  * @author Roman Smirnov
  *
