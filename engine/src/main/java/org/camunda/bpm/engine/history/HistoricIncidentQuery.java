@@ -128,6 +128,9 @@ public interface HistoricIncidentQuery extends Query<HistoricIncidentQuery, Hist
   /** Order by processDefinitionId (needs to be followed by {@link #asc()} or {@link #desc()}). */
   HistoricIncidentQuery orderByProcessDefinitionId();
 
+  /** Order by processDefinitionKey (needs to be followed by {@link #asc()} or {@link #desc()}). */
+  HistoricIncidentQuery orderByProcessDefinitionKey();
+
   /** Order by causeIncidentId (needs to be followed by {@link #asc()} or {@link #desc()}). */
   HistoricIncidentQuery orderByCauseIncidentId();
 
