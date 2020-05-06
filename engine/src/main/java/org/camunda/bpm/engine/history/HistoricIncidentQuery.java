@@ -33,8 +33,19 @@ public interface HistoricIncidentQuery extends Query<HistoricIncidentQuery, Hist
   /** Only select historic incidents which have the given incident message. **/
   HistoricIncidentQuery incidentMessage(String incidentMessage);
 
+  /**
+   * Only select historic incidents which have the which incident message is like the given value.
+   *
+   * @param incidentMessageLike The string can include the wildcard character '%' to express
+   *    like-strategy: starts with (string%), ends with (%string) or contains (%string%).
+   */
+  HistoricIncidentQuery incidentMessageLike(String incidentMessageLike);
+
   /** Only select historic incidents which have the given process definition id. **/
   HistoricIncidentQuery processDefinitionId(String processDefinitionId);
+
+  /** Only select historic incidents which have the given processDefinitionKey. **/
+  HistoricIncidentQuery processDefinitionKey(String processDefinitionKey);
 
   /** Only select historic incidents which have one of the given process definition keys. **/
   HistoricIncidentQuery processDefinitionKeyIn(String... processDefinitionKeys);
@@ -44,6 +55,18 @@ public interface HistoricIncidentQuery extends Query<HistoricIncidentQuery, Hist
 
   /** Only select historic incidents with the given id. **/
   HistoricIncidentQuery executionId(String executionId);
+
+  /** Only select historic incidents instances which have a createTime date before the given date **/
+  HistoricIncidentQuery createTimeBefore(Date createTimeBefore);
+
+  /** Only select historic incidents which have a createTime date after the given date **/
+  HistoricIncidentQuery createTimeAfter(Date createTimeAfter);
+
+  /** Only select historic incidents instances which have a endTimeBefore date before the given date **/
+  HistoricIncidentQuery endTimeBefore(Date endTimeBefore);
+
+  /** Only select historic incidents which have a endTimeAfter date after the given date **/
+  HistoricIncidentQuery endTimeAfter(Date endTimeAfter);
 
   /** Only select historic incidents which contain an activity with the given id. **/
   HistoricIncidentQuery activityId(String activityId);
