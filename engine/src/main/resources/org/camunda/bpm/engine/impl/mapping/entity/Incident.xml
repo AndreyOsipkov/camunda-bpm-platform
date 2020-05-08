@@ -150,10 +150,10 @@
         and RES.EXECUTION_ID_ = #{executionId}
       </if>
       <if test="incidentTimestampBefore != null">
-        and RES.INCIDENT_TIMESTAMP_ &gt; #{incidentTimestampBefore}
+        and RES.INCIDENT_TIMESTAMP_ &lt; #{incidentTimestampBefore}
       </if>
       <if test="incidentTimestampAfter != null">
-        and RES.INCIDENT_TIMESTAMP_ &lt; #{incidentTimestampAfter}
+        and RES.INCIDENT_TIMESTAMP_ &gt; #{incidentTimestampAfter}
       </if>
       <if test="activityId != null">
         and RES.ACTIVITY_ID_ = #{activityId}

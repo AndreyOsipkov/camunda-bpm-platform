@@ -133,7 +133,7 @@ public class IncidentQueryDto extends AbstractQueryDto<IncidentQuery>{
   }
 
   @CamundaQueryParam(value="incidentTimestampBefore", converter= DateConverter.class)
-  public void setIncidentTimestampBefore(Date IncidentTimestampBefore) {
+  public void setIncidentTimestampBefore(Date incidentTimestampBefore) {
     this.incidentTimestampBefore = incidentTimestampBefore;
   }
 
