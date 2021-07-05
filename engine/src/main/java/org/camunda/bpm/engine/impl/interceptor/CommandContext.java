@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 
 import org.camunda.bpm.application.InvocationContext;
 import org.camunda.bpm.application.ProcessApplicationReference;
+import org.camunda.bpm.engine.AuthorizationException;
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.IdentityService;
 import org.camunda.bpm.engine.OptimisticLockingException;
@@ -195,6 +196,11 @@ public class CommandContext {
               transactionContext.commit();
             }
           } catch (Throwable exception) {
+            
+            if (DbSqlSession.isCrdbConcurrencyConflict(exception)) {
+              exception = ProcessEngineLogger.PERSISTENCE_LOGGER.crdbTransactionRetryExceptionOnCommit(exception);
+            }
+            
             commandInvocationContext.trySetThrowable(exception);
           }
 
@@ -234,7 +240,9 @@ public class CommandContext {
   }
 
   protected boolean shouldLogFine(Throwable exception) {
-    return exception instanceof OptimisticLockingException || exception instanceof BadUserRequestException;
+    return exception instanceof OptimisticLockingException ||
+        exception instanceof BadUserRequestException ||
+        exception instanceof AuthorizationException;
   }
 
   protected boolean shouldLogCmdException() {
@@ -647,4 +655,22 @@ public class CommandContext {
   public OptimizeManager getOptimizeManager() {
     return getSession(OptimizeManager.class);
   }
+
+  public <T> void executeWithOperationLogPrevented(Command<T> command) {
+    boolean initialLegacyRestrictions =
+        isRestrictUserOperationLogToAuthenticatedUsers();
+
+    disableUserOperationLog();
+    setRestrictUserOperationLogToAuthenticatedUsers(true);
+
+    try {
+      command.execute(this);
+
+    } finally {
+      enableUserOperationLog();
+      setRestrictUserOperationLogToAuthenticatedUsers(initialLegacyRestrictions);
+
+    }
+  }
+
 }

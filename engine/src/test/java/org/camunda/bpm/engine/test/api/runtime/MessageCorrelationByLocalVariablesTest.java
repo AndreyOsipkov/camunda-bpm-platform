@@ -16,11 +16,18 @@
  */
 package org.camunda.bpm.engine.test.api.runtime;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.camunda.bpm.engine.MismatchingMessageCorrelationException;
+import org.camunda.bpm.engine.exception.NotFoundException;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.MessageCorrelationResult;
@@ -28,15 +35,12 @@ import org.camunda.bpm.engine.runtime.MessageCorrelationResultType;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Svetlana Dorokhova
@@ -44,9 +48,8 @@ import static org.junit.Assert.assertNotNull;
 public class MessageCorrelationByLocalVariablesTest {
 
   public static final String TEST_MESSAGE_NAME = "TEST_MSG";
-  @Rule public ProcessEngineRule engineRule = new ProcessEngineRule(true);
+  @Rule public ProcessEngineRule engineRule = new ProvidedProcessEngineRule();
   @Rule public ProcessEngineTestRule testHelper = new ProcessEngineTestRule(engineRule);
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testReceiveTaskMessageCorrelation() {
@@ -255,12 +258,11 @@ public class MessageCorrelationByLocalVariablesTest {
     correlationKeys.put("localVar", correlationKey);
     correlationKeys.put("constVar", "someValue");
 
-    // declare expected exception
-    thrown.expect(MismatchingMessageCorrelationException.class);
-    thrown.expectMessage(String.format("Cannot correlate a message with name '%s' to a single execution", TEST_MESSAGE_NAME));
-
-    engineRule.getRuntimeService().createMessageCorrelation(messageName)
-        .localVariablesEqual(correlationKeys).setVariables(Variables.createVariables().putValue("newVar", "newValue")).correlateWithResult();
+    // when/then
+    assertThatThrownBy(() -> engineRule.getRuntimeService().createMessageCorrelation(messageName)
+        .localVariablesEqual(correlationKeys).setVariables(Variables.createVariables().putValue("newVar", "newValue")).correlateWithResult())
+      .isInstanceOf(MismatchingMessageCorrelationException.class)
+      .hasMessageContaining(String.format("Cannot correlate a message with name '%s' to a single execution", TEST_MESSAGE_NAME));
 
   }
 

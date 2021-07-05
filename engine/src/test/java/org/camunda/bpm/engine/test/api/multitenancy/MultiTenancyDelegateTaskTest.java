@@ -16,25 +16,27 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.engine.delegate.DelegateTask;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.api.delegate.AssertingTaskListener;
 import org.camunda.bpm.engine.test.api.delegate.AssertingTaskListener.DelegateTaskAsserter;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
+import org.junit.After;
+import org.junit.Test;
 
 /**
  * Tests if a {@link DelegateTask} has the correct tenant-id. The
  * assertions are checked inside the task listener.
  */
-public class MultiTenancyDelegateTaskTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyDelegateTaskTest extends PluggableProcessEngineTest {
 
   protected static final String BPMN = "org/camunda/bpm/engine/test/api/multitenancy/taskListener.bpmn";
 
+  @Test
   public void testSingleExecutionWithUserTask() {
-    deploymentForTenant("tenant1", BPMN);
+    testRule.deployForTenant("tenant1", BPMN);
 
     AssertingTaskListener.addAsserts(hasTenantId("tenant1"));
 
@@ -47,15 +49,15 @@ public class MultiTenancyDelegateTaskTest extends PluggableProcessEngineTestCase
 
       @Override
       public void doAssert(DelegateTask task) {
-        assertThat(task.getTenantId(), is(expectedTenantId));
+        assertThat(task.getTenantId()).isEqualTo(expectedTenantId);
       }
     };
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
     AssertingTaskListener.clear();
-    super.tearDown();
+
   }
 
 }

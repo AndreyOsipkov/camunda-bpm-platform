@@ -16,6 +16,12 @@
  */
 package org.camunda.bpm.engine.test.api.history.removaltime;
 
+import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_FULL;
+
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+
 import org.camunda.bpm.dmn.engine.impl.DefaultDmnEngineConfiguration;
 import org.camunda.bpm.engine.AuthorizationService;
 import org.camunda.bpm.engine.DecisionService;
@@ -46,14 +52,7 @@ import org.camunda.bpm.engine.test.util.ResetDmnConfigUtil;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-
-import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_FULL;
 
 /**
  * @author Tassilo Weidner
@@ -66,9 +65,6 @@ public abstract class AbstractRemovalTimeTest {
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   protected RuntimeService runtimeService;
   protected FormService formService;

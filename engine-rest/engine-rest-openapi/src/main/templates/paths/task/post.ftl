@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "queryTasks"
       tag = "Task"
+      summary = "Get List (POST)"
       desc = "Queries for tasks that fulfill a given filter. This method is slightly more powerful
               than the [Get Tasks](${docsUrl}/reference/rest/task/get-query/) method because it
               allows filtering by multiple process or task variables of types `String`, `Number`
@@ -157,3 +159,4 @@
 
   }
 }
+</#macro>

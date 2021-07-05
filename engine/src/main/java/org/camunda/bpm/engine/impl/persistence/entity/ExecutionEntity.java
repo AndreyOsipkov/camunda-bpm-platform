@@ -43,7 +43,11 @@ import org.camunda.bpm.engine.impl.core.instance.CoreExecution;
 import org.camunda.bpm.engine.impl.core.operation.CoreAtomicOperation;
 import org.camunda.bpm.engine.impl.core.variable.CoreVariableInstance;
 import org.camunda.bpm.engine.impl.core.variable.event.VariableEvent;
-import org.camunda.bpm.engine.impl.core.variable.scope.*;
+import org.camunda.bpm.engine.impl.core.variable.scope.VariableCollectionProvider;
+import org.camunda.bpm.engine.impl.core.variable.scope.VariableInstanceFactory;
+import org.camunda.bpm.engine.impl.core.variable.scope.VariableInstanceLifecycleListener;
+import org.camunda.bpm.engine.impl.core.variable.scope.VariableListenerInvocationListener;
+import org.camunda.bpm.engine.impl.core.variable.scope.VariableStore;
 import org.camunda.bpm.engine.impl.core.variable.scope.VariableStore.VariablesProvider;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.EnginePersistenceLogger;
@@ -51,14 +55,16 @@ import org.camunda.bpm.engine.impl.db.HasDbReferences;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.event.EventType;
 import org.camunda.bpm.engine.impl.history.HistoryLevel;
+import org.camunda.bpm.engine.impl.history.event.HistoricVariableUpdateEventEntity;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
 import org.camunda.bpm.engine.impl.history.event.HistoryEventProcessor;
 import org.camunda.bpm.engine.impl.history.event.HistoryEventTypes;
 import org.camunda.bpm.engine.impl.history.producer.HistoryEventProducer;
+import org.camunda.bpm.engine.impl.incident.IncidentContext;
+import org.camunda.bpm.engine.impl.incident.IncidentHandling;
 import org.camunda.bpm.engine.impl.interceptor.AtomicOperationInvocation;
 import org.camunda.bpm.engine.impl.jobexecutor.MessageJobDeclaration;
 import org.camunda.bpm.engine.impl.jobexecutor.TimerDeclarationImpl;
-import org.camunda.bpm.engine.impl.persistence.entity.util.FormPropertyStartContext;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessDefinition;
 import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
@@ -441,7 +447,7 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
   }
 
   @Override
-  public void start(Map<String, Object> variables) {
+  public void start(Map<String, Object> variables, VariableMap formProperties) {
     if (getSuperExecution() == null) {
       setRootProcessInstanceId(processInstanceId);
     } else {
@@ -450,23 +456,27 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
     }
 
     // determine tenant Id if null
-    provideTenantId(variables);
-    super.start(variables);
+    provideTenantId(variables, formProperties);
+    super.start(variables, formProperties);
   }
 
   @Override
   public void startWithoutExecuting(Map<String, Object> variables) {
     setRootProcessInstanceId(getProcessInstanceId());
-    provideTenantId(variables);
+    provideTenantId(variables, null);
     super.startWithoutExecuting(variables);
   }
 
-  protected void provideTenantId(Map<String, Object> variables) {
+  protected void provideTenantId(Map<String, Object> variables, VariableMap properties) {
     if (tenantId == null) {
       TenantIdProvider tenantIdProvider = Context.getProcessEngineConfiguration().getTenantIdProvider();
 
       if (tenantIdProvider != null) {
         VariableMap variableMap = Variables.fromMap(variables);
+        if(properties != null && !properties.isEmpty()) {
+          variableMap.putAll(properties);
+        }
+
         ProcessDefinition processDefinition = getProcessDefinition();
 
         TenantIdProviderProcessInstanceContext ctx;
@@ -481,27 +491,6 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
         tenantId = tenantIdProvider.provideTenantIdForProcessInstance(ctx);
       }
     }
-  }
-
-  public void startWithFormProperties(VariableMap properties) {
-    setRootProcessInstanceId(getProcessInstanceId());
-    provideTenantId(properties);
-    if (isProcessInstanceExecution()) {
-      ActivityImpl initial = processDefinition.getInitial();
-      ProcessInstanceStartContext processInstanceStartContext = getProcessInstanceStartContext();
-      if (processInstanceStartContext != null) {
-        initial = processInstanceStartContext.getInitial();
-      }
-      FormPropertyStartContext formPropertyStartContext = new FormPropertyStartContext(initial);
-      formPropertyStartContext.setFormProperties(properties);
-      startContext = formPropertyStartContext;
-
-      initialize();
-      initializeTimerDeclarations();
-      fireHistoricProcessStartEvent();
-    }
-
-    performOperation(PvmAtomicOperation.PROCESS_START);
   }
 
   @Override
@@ -1099,8 +1088,15 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
       if (isReplacedByParent()) {
         incident.setExecution(getReplacedBy());
       } else {
-        incident.delete();
+        IncidentContext incidentContext = createIncidentContext(incident.getConfiguration());
+        IncidentHandling.removeIncidents(incident.getIncidentType(), incidentContext, false);
       }
+    }
+
+    for (IncidentEntity incident : getIncidents()) {
+      // if the handler doesn't take care of it,
+      // make sure the incident is deleted nevertheless
+      incident.delete();
     }
   }
 

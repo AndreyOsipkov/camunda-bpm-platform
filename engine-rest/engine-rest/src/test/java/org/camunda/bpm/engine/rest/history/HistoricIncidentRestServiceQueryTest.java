@@ -281,6 +281,16 @@ public class HistoricIncidentRestServiceQueryTest extends AbstractRestServiceTes
     executeAndVerifySorting("incidentState", "desc", Status.OK);
     inOrder.verify(mockedQuery).orderByIncidentState();
     inOrder.verify(mockedQuery).desc();
+
+    inOrder = Mockito.inOrder(mockedQuery);
+    executeAndVerifySorting("processDefinitionKey", "asc", Status.OK);
+    inOrder.verify(mockedQuery).orderByProcessDefinitionKey();
+    inOrder.verify(mockedQuery).asc();
+
+    inOrder = Mockito.inOrder(mockedQuery);
+    executeAndVerifySorting("processDefinitionKey", "desc", Status.OK);
+    inOrder.verify(mockedQuery).orderByProcessDefinitionKey();
+    inOrder.verify(mockedQuery).desc();
   }
 
   @Test
@@ -379,6 +389,7 @@ public class HistoricIncidentRestServiceQueryTest extends AbstractRestServiceTes
     String returnedJobDefinitionId = from(content).getString("[0].jobDefinitionId");
     Date returnedRemovalTime = DateTimeUtil.parseDate(from(content).getString("[0].removalTime"));
     String returnedRootProcessInstanceId = from(content).getString("[0].rootProcessInstanceId");
+    String returnedAnnotation = from(content).getString("[0].annotation");
 
     Assert.assertEquals(MockProvider.EXAMPLE_HIST_INCIDENT_ID, returnedId);
     Assert.assertEquals(MockProvider.EXAMPLE_HIST_INCIDENT_PROC_INST_ID, returnedProcessInstanceId);
@@ -401,6 +412,7 @@ public class HistoricIncidentRestServiceQueryTest extends AbstractRestServiceTes
     Assert.assertEquals(EXAMPLE_JOB_DEFINITION_ID, returnedJobDefinitionId);
     Assert.assertEquals(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HIST_INCIDENT_REMOVAL_TIME), returnedRemovalTime);
     Assert.assertEquals(MockProvider.EXAMPLE_HIST_INCIDENT_ROOT_PROC_INST_ID, returnedRootProcessInstanceId);
+    Assert.assertEquals(MockProvider.EXAMPLE_USER_OPERATION_ANNOTATION, returnedAnnotation);
 
   }
 
@@ -441,6 +453,18 @@ public class HistoricIncidentRestServiceQueryTest extends AbstractRestServiceTes
   }
 
   @Test
+  public void testQueryByIncidentMessageLike() {
+    String incidentMessage = MockProvider.EXAMPLE_HIST_INCIDENT_MESSAGE;
+
+    given()
+            .queryParam("incidentMessageLike", incidentMessage)
+            .then().expect().statusCode(Status.OK.getStatusCode())
+            .when().get(HISTORY_INCIDENT_QUERY_URL);
+
+    verify(mockedQuery).incidentMessageLike(incidentMessage);
+  }
+
+  @Test
   public void testQueryByProcessDefinitionId() {
     String processDefinitionId = MockProvider.EXAMPLE_HIST_INCIDENT_PROC_DEF_ID;
 
@@ -454,6 +478,18 @@ public class HistoricIncidentRestServiceQueryTest extends AbstractRestServiceTes
 
   @Test
   public void testQueryByProcessDefinitionKey() {
+    String processDefinitionKey = MockProvider.EXAMPLE_HIST_INCIDENT_PROC_DEF_KEY;
+
+    given()
+            .queryParam("processDefinitionKey", processDefinitionKey)
+            .then().expect().statusCode(Status.OK.getStatusCode())
+            .when().get(HISTORY_INCIDENT_QUERY_URL);
+
+    verify(mockedQuery).processDefinitionKey(processDefinitionKey);
+  }
+
+  @Test
+  public void testQueryByProcessDefinitionKeyIn() {
     String key1 = "foo";
     String key2 = "bar";
 
@@ -502,6 +538,32 @@ public class HistoricIncidentRestServiceQueryTest extends AbstractRestServiceTes
     .when().get(HISTORY_INCIDENT_QUERY_URL);
 
     verify(mockedQuery).activityId(activityId);
+  }
+
+  @Test
+  public void testQueryByCreateTimeBeforeAndAfter() {
+    given()
+            .queryParam("createTimeBefore", MockProvider.EXAMPLE_HIST_INCIDENT_CREATE_TIME_BEFORE)
+            .queryParam("createTimeAfter", MockProvider.EXAMPLE_HIST_INCIDENT_CREATE_TIME_AFTER)
+            .then().expect().statusCode(Status.OK.getStatusCode())
+            .when().get(HISTORY_INCIDENT_QUERY_URL);
+
+    verify(mockedQuery).createTimeAfter(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HIST_INCIDENT_CREATE_TIME_AFTER));
+    verify(mockedQuery).createTimeBefore(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HIST_INCIDENT_CREATE_TIME_BEFORE));
+    verify(mockedQuery).list();
+  }
+
+  @Test
+  public void testQueryByEndTimeBeforeAndAfter() {
+    given()
+            .queryParam("endTimeBefore", MockProvider.EXAMPLE_HIST_INCIDENT_END_TIME_BEFORE)
+            .queryParam("endTimeAfter", MockProvider.EXAMPLE_HIST_INCIDENT_END_TIME_AFTER)
+            .then().expect().statusCode(Status.OK.getStatusCode())
+            .when().get(HISTORY_INCIDENT_QUERY_URL);
+
+    verify(mockedQuery).endTimeAfter(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HIST_INCIDENT_END_TIME_AFTER));
+    verify(mockedQuery).endTimeBefore(DateTimeUtil.parseDate(MockProvider.EXAMPLE_HIST_INCIDENT_END_TIME_BEFORE));
+    verify(mockedQuery).list();
   }
 
   @Test

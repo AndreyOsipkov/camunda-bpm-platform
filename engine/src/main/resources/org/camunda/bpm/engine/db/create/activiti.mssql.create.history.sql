@@ -53,7 +53,7 @@ create table ACT_HI_ACTINST (
     CALL_CASE_INST_ID_ nvarchar(64),
     ACT_NAME_ nvarchar(255),
     ACT_TYPE_ nvarchar(255) not null,
-    ASSIGNEE_ nvarchar(64),
+    ASSIGNEE_ nvarchar(255),
     START_TIME_ datetime2 not null,
     END_TIME_ datetime2,
     DURATION_ numeric(19,0),
@@ -255,7 +255,8 @@ create table ACT_HI_INCIDENT (
   INCIDENT_STATE_ integer,
   TENANT_ID_ nvarchar(64),
   JOB_DEF_ID_ nvarchar(64),
-    REMOVAL_TIME_ datetime2,
+  ANNOTATION_ nvarchar(4000),
+  REMOVAL_TIME_ datetime2,
   primary key (ID_)
 );
 
@@ -395,6 +396,8 @@ create index ACT_IDX_HI_INCIDENT_PROC_DEF_KEY on ACT_HI_INCIDENT(PROC_DEF_KEY_);
 create index ACT_IDX_HI_INCIDENT_ROOT_PI on ACT_HI_INCIDENT(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_INCIDENT_PROCINST on ACT_HI_INCIDENT(PROC_INST_ID_);
 create index ACT_IDX_HI_INCIDENT_RM_TIME on ACT_HI_INCIDENT(REMOVAL_TIME_);
+create index ACT_IDX_HI_INCIDENT_CREATE_TIME on ACT_HI_INCIDENT(CREATE_TIME_);
+create index ACT_IDX_HI_INCIDENT_END_TIME on ACT_HI_INCIDENT(END_TIME_);
 
 create index ACT_IDX_HI_JOB_LOG_ROOT_PI on ACT_HI_JOB_LOG(ROOT_PROC_INST_ID_);
 create index ACT_IDX_HI_JOB_LOG_PROCINST on ACT_HI_JOB_LOG(PROCESS_INSTANCE_ID_);

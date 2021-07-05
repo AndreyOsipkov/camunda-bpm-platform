@@ -15,12 +15,19 @@ if [ "x$JAVA" = "x" ]; then
   fi
 fi
 
+if [ "x$JAVA_OPTS" != "x" ]; then
+  echo JAVA_OPTS: $JAVA_OPTS
+fi
 
 # set environment parameters
 webappsPath=$BASEDIR/internal/webapps/
 restPath=$BASEDIR/internal/rest/
+swaggerPath=$BASEDIR/internal/swaggerui
 classPath=$BASEDIR/configuration/userlib/,$BASEDIR/configuration/keystore/
 optionalComponentChosen=false
+restChosen=false
+swaggeruiChosen=false
+productionChosen=false
 configuration=$BASEDIR/configuration/default.yml
 
 
@@ -32,24 +39,42 @@ while [ "$1" != "" ]; do
                    echo WebApps enabled
                    ;;
     --rest )       optionalComponentChosen=true
+                   restChosen=true
                    classPath=$restPath,$classPath
                    echo REST API enabled
                    ;;
+    --swaggerui )  optionalComponentChosen=true
+                   swaggeruiChosen=true
+                   classPath=$swaggerPath,$classPath
+                   echo Swagger UI enabled
+                   ;;
     --production ) configuration=$BASEDIR/configuration/production.yml
+                   productionChosen=true
                    ;;
     * )            exit 1
   esac
   shift
 done
 
-# if neither REST nor Webapps are explicitly chosen, enable both
+# if neither REST nor Webapps are chosen, enable both as well as Swagger UI if production mode is not chosen
 if [ "$optionalComponentChosen" = "false" ]; then
+  restChosen=true
   echo REST API enabled
   echo WebApps enabled
+  if [ "$productionChosen" = "false" ]; then
+    swaggeruiChosen=true
+    echo Swagger UI enabled
+    classPath=$swaggerPath,$classPath
+  fi
   classPath=$webappsPath,$restPath,$classPath
+fi
+
+# if Swagger UI is enabled but REST is not, warn the user
+if [ "$swaggeruiChosen" = "true" ] && [ "$restChosen" = "false" ]; then
+  echo You did not enable the REST API. Swagger UI will not be able to send any requests to this Camunda Platform Run instance.
 fi
 
 echo classpath: $classPath
 
 # start the application
-"$JAVA" -Dloader.path="$classPath" -Dcamunda.deploymentDir="$deploymentDir" -jar "$BASEDIR/internal/camunda-bpm-run-core.jar" --spring.config.location=file:"$configuration"
+"$JAVA" -Dloader.path="$classPath" -Dcamunda.deploymentDir="$deploymentDir" $JAVA_OPTS -jar "$BASEDIR/internal/camunda-bpm-run-core.jar" --spring.config.location=file:"$configuration"

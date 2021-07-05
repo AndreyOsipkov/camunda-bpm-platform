@@ -1,3 +1,4 @@
+<#macro dto_macro docsUrl="">
 <@lib.dto
     title = "ExternalTaskDto"
     desc = "An External Task object with the following properties" >
@@ -17,12 +18,6 @@
       type = "string"
       desc = "The full error message submitted with the latest reported failure executing this task; `null` if no
               failure was reported previously or if no error message was submitted" />
-
-  <@lib.property
-      name = "errorDetails"
-      type = "string"
-      desc = "The error details submitted with the latest reported failure executing this task. `null` if no failure
-              was reported previously or if no error details was submitted" />
 
   <@lib.property
       name = "executionId"
@@ -100,3 +95,5 @@
 
 
 </@lib.dto>
+
+</#macro>

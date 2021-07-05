@@ -16,9 +16,8 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy.cmmn.query;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,11 +25,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.camunda.bpm.engine.exception.NullValueException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.repository.CaseDefinition;
 import org.camunda.bpm.engine.repository.CaseDefinitionQuery;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
+import org.junit.Before;
+import org.junit.Test;
 
-public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineTest {
 
   protected static final String CASE_DEFINITION_KEY = "Case_1";
   protected static final String CMMN = "org/camunda/bpm/engine/test/cmmn/deployment/CmmnDeploymentTest.testSimpleDeployment.cmmn";
@@ -38,114 +39,122 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
   protected static final String TENANT_ONE = "tenant1";
   protected static final String TENANT_TWO = "tenant2";
 
-  @Override
-  protected void setUp() {
-    deployment(CMMN);
-    deploymentForTenant(TENANT_ONE, CMMN);
-    deploymentForTenant(TENANT_TWO, CMMN);
+  @Before
+  public void setUp() {
+    testRule.deploy(CMMN);
+    testRule.deployForTenant(TENANT_ONE, CMMN);
+    testRule.deployForTenant(TENANT_TWO, CMMN);
   }
 
+  @Test
   public void testQueryNoTenantIdSet() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery();
 
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
   }
 
+  @Test
   public void testQueryByTenantId() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .tenantIdIn(TENANT_ONE);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     query = repositoryService.
         createCaseDefinitionQuery()
         .tenantIdIn(TENANT_TWO);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryByTenantIds() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .tenantIdIn(TENANT_ONE, TENANT_TWO);
 
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
   }
 
+  @Test
   public void testQueryByDefinitionsWithoutTenantId() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .withoutTenantId();
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryByTenantIdsIncludeDefinitionsWithoutTenantId() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .tenantIdIn(TENANT_ONE)
         .includeCaseDefinitionsWithoutTenantId();
 
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
 
     query = repositoryService
         .createCaseDefinitionQuery()
         .tenantIdIn(TENANT_TWO)
         .includeCaseDefinitionsWithoutTenantId();
 
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
 
     query = repositoryService
         .createCaseDefinitionQuery()
         .tenantIdIn(TENANT_ONE, TENANT_TWO)
         .includeCaseDefinitionsWithoutTenantId();
 
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
   }
 
+  @Test
   public void testQueryByKey() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .caseDefinitionKey(CASE_DEFINITION_KEY);
     // one definition for each tenant
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
 
     query = repositoryService
         .createCaseDefinitionQuery()
         .caseDefinitionKey(CASE_DEFINITION_KEY)
         .withoutTenantId();
     // one definition without tenant id
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     query = repositoryService
         .createCaseDefinitionQuery()
         .caseDefinitionKey(CASE_DEFINITION_KEY)
         .tenantIdIn(TENANT_ONE);
     // one definition for tenant one
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryByLatestNoTenantIdSet() {
     // deploy a second version for tenant one
-    deploymentForTenant(TENANT_ONE, CMMN);
+    testRule.deployForTenant(TENANT_ONE, CMMN);
 
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .caseDefinitionKey(CASE_DEFINITION_KEY)
         .latestVersion();
     // one definition for each tenant
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
 
     Map<String, CaseDefinition> caseDefinitionsForTenant = getCaseDefinitionsForTenant(query.list());
-    assertThat(caseDefinitionsForTenant.get(TENANT_ONE).getVersion(), is(2));
-    assertThat(caseDefinitionsForTenant.get(TENANT_TWO).getVersion(), is(1));
-    assertThat(caseDefinitionsForTenant.get(null).getVersion(), is(1));
+    assertThat(caseDefinitionsForTenant.get(TENANT_ONE).getVersion()).isEqualTo(2);
+    assertThat(caseDefinitionsForTenant.get(TENANT_TWO).getVersion()).isEqualTo(1);
+    assertThat(caseDefinitionsForTenant.get(null).getVersion()).isEqualTo(1);
   }
 
+  @Test
   public void testQueryByLatestWithTenantId() {
     // deploy a second version for tenant one
-    deploymentForTenant(TENANT_ONE, CMMN);
+    testRule.deployForTenant(TENANT_ONE, CMMN);
 
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
@@ -153,11 +162,11 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .latestVersion()
         .tenantIdIn(TENANT_ONE);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     CaseDefinition caseDefinition = query.singleResult();
-    assertThat(caseDefinition.getTenantId(), is(TENANT_ONE));
-    assertThat(caseDefinition.getVersion(), is(2));
+    assertThat(caseDefinition.getTenantId()).isEqualTo(TENANT_ONE);
+    assertThat(caseDefinition.getVersion()).isEqualTo(2);
 
     query = repositoryService
         .createCaseDefinitionQuery()
@@ -165,16 +174,17 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .latestVersion()
         .tenantIdIn(TENANT_TWO);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     caseDefinition = query.singleResult();
-    assertThat(caseDefinition.getTenantId(), is(TENANT_TWO));
-    assertThat(caseDefinition.getVersion(), is(1));
+    assertThat(caseDefinition.getTenantId()).isEqualTo(TENANT_TWO);
+    assertThat(caseDefinition.getVersion()).isEqualTo(1);
   }
 
+  @Test
   public void testQueryByLatestWithTenantIds() {
     // deploy a second version for tenant one
-    deploymentForTenant(TENANT_ONE, CMMN);
+    testRule.deployForTenant(TENANT_ONE, CMMN);
 
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
@@ -182,16 +192,17 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .latestVersion()
         .tenantIdIn(TENANT_ONE, TENANT_TWO);
     // one definition for each tenant
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
 
     Map<String, CaseDefinition> caseDefinitionsForTenant = getCaseDefinitionsForTenant(query.list());
-    assertThat(caseDefinitionsForTenant.get(TENANT_ONE).getVersion(), is(2));
-    assertThat(caseDefinitionsForTenant.get(TENANT_TWO).getVersion(), is(1));
+    assertThat(caseDefinitionsForTenant.get(TENANT_ONE).getVersion()).isEqualTo(2);
+    assertThat(caseDefinitionsForTenant.get(TENANT_TWO).getVersion()).isEqualTo(1);
   }
 
+  @Test
   public void testQueryByLatestWithoutTenantId() {
     // deploy a second version without tenant id
-    deployment(CMMN);
+   testRule.deploy(CMMN);
 
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
@@ -199,19 +210,20 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .latestVersion()
         .withoutTenantId();
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     CaseDefinition cDefinition = query.singleResult();
-    assertThat(cDefinition.getTenantId(), is(nullValue()));
-    assertThat(cDefinition.getVersion(), is(2));
+    assertThat(cDefinition.getTenantId()).isNull();
+    assertThat(cDefinition.getVersion()).isEqualTo(2);
   }
 
+  @Test
   public void testQueryByLatestWithTenantIdsIncludeDefinitionsWithoutTenantId() {
     // deploy a second version without tenant id
-    deployment(CMMN);
+   testRule.deploy(CMMN);
     // deploy a third version for tenant one
-    deploymentForTenant(TENANT_ONE, CMMN);
-    deploymentForTenant(TENANT_ONE, CMMN);
+    testRule.deployForTenant(TENANT_ONE, CMMN);
+    testRule.deployForTenant(TENANT_ONE, CMMN);
 
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
@@ -220,22 +232,24 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .tenantIdIn(TENANT_ONE, TENANT_TWO)
         .includeCaseDefinitionsWithoutTenantId();
 
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
 
     Map<String, CaseDefinition> caseDefinitionsForTenant = getCaseDefinitionsForTenant(query.list());
-    assertThat(caseDefinitionsForTenant.get(TENANT_ONE).getVersion(), is(3));
-    assertThat(caseDefinitionsForTenant.get(TENANT_TWO).getVersion(), is(1));
-    assertThat(caseDefinitionsForTenant.get(null).getVersion(), is(2));
+    assertThat(caseDefinitionsForTenant.get(TENANT_ONE).getVersion()).isEqualTo(3);
+    assertThat(caseDefinitionsForTenant.get(TENANT_TWO).getVersion()).isEqualTo(1);
+    assertThat(caseDefinitionsForTenant.get(null).getVersion()).isEqualTo(2);
   }
 
+  @Test
   public void testQueryByNonExistingTenantId() {
     CaseDefinitionQuery query = repositoryService
         .createCaseDefinitionQuery()
         .tenantIdIn("nonExisting");
 
-    assertThat(query.count(), is(0L));
+    assertThat(query.count()).isEqualTo(0L);
   }
 
+  @Test
   public void testFailQueryByTenantIdNull() {
     try {
       repositoryService.createCaseDefinitionQuery()
@@ -246,6 +260,7 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
     }
   }
 
+  @Test
   public void testQuerySortingAsc() {
     // exclude definitions without tenant id because of database-specific ordering
     List<CaseDefinition> caseDefinitions = repositoryService
@@ -255,11 +270,12 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .asc()
         .list();
 
-    assertThat(caseDefinitions.size(), is(2));
-    assertThat(caseDefinitions.get(0).getTenantId(), is(TENANT_ONE));
-    assertThat(caseDefinitions.get(1).getTenantId(), is(TENANT_TWO));
+    assertThat(caseDefinitions).hasSize(2);
+    assertThat(caseDefinitions.get(0).getTenantId()).isEqualTo(TENANT_ONE);
+    assertThat(caseDefinitions.get(1).getTenantId()).isEqualTo(TENANT_TWO);
   }
 
+  @Test
   public void testQuerySortingDesc() {
     // exclude definitions without tenant id because of database-specific ordering
     List<CaseDefinition> caseDefinitions = repositoryService
@@ -269,46 +285,50 @@ public class MultiTenancyCaseDefinitionQueryTest extends PluggableProcessEngineT
         .desc()
         .list();
 
-    assertThat(caseDefinitions.size(), is(2));
-    assertThat(caseDefinitions.get(0).getTenantId(), is(TENANT_TWO));
-    assertThat(caseDefinitions.get(1).getTenantId(), is(TENANT_ONE));
+    assertThat(caseDefinitions).hasSize(2);
+    assertThat(caseDefinitions.get(0).getTenantId()).isEqualTo(TENANT_TWO);
+    assertThat(caseDefinitions.get(1).getTenantId()).isEqualTo(TENANT_ONE);
   }
 
+  @Test
   public void testQueryNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
     CaseDefinitionQuery query = repositoryService.createCaseDefinitionQuery();
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryAuthenticatedTenant() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
     CaseDefinitionQuery query = repositoryService.createCaseDefinitionQuery();
 
-    assertThat(query.count(), is(2L));
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(0L));
-    assertThat(query.tenantIdIn(TENANT_ONE, TENANT_TWO).includeCaseDefinitionsWithoutTenantId().count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(0L);
+    assertThat(query.tenantIdIn(TENANT_ONE, TENANT_TWO).includeCaseDefinitionsWithoutTenantId().count()).isEqualTo(2L);
   }
 
+  @Test
   public void testQueryAuthenticatedTenants() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE, TENANT_TWO));
 
     CaseDefinitionQuery query = repositoryService.createCaseDefinitionQuery();
 
-    assertThat(query.count(), is(3L));
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(1L));
-    assertThat(query.withoutTenantId().count(), is(1L));
+    assertThat(query.count()).isEqualTo(3L);
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(1L);
+    assertThat(query.withoutTenantId().count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryDisabledTenantCheck() {
     processEngineConfiguration.setTenantCheckEnabled(false);
     identityService.setAuthentication("user", null, null);
 
     CaseDefinitionQuery query = repositoryService.createCaseDefinitionQuery();
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
   }
 
   protected Map<String, CaseDefinition> getCaseDefinitionsForTenant(List<CaseDefinition> definitions) {

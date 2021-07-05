@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "fetchAndLock"
       tag = "External Task"
+      summary = "Fetch and Lock"
       desc = "Fetches and locks a specific number of external tasks for execution by a worker. Query can be restricted
               to specific task topics and for each task topic an individual lock time can be provided." />
 
@@ -43,7 +45,21 @@
                            }
                          ]
                        }
-                     }'
+                     }',
+                    '"example-3": {
+                      "summary": "POST /external-task/fetchAndLock (3)",
+                      "description": "Request with includeExtensionProperties",
+                      "value": {
+                        "workerId":"aWorkerId",
+                        "maxTasks":1,
+                        "usePriority":true,
+                        "topics":
+                            [{"topicName": "createOrder",
+                            "lockDuration": 10000,
+                            "includeExtensionProperties": true
+                            }]
+                      }
+                    }'
       ] />
 
   "responses" : {
@@ -162,6 +178,35 @@
                            }
                          }
                        ]
+                     }',
+                     '"example-3": {
+                       "summary": "POST /external-task/fetchAndLock (3)",
+                       "description": "Request with includeExtensionProperties",
+                       "value":   [{
+                         "activityId": "anActivityId",
+                         "activityInstanceId": "anActivityInstanceId",
+                         "errorMessage": "anErrorMessage",
+                         "errorDetails": "anErrorDetails",
+                         "executionId": "anExecutionId",
+                         "id": "anExternalTaskId",
+                         "lockExpirationTime": "2015-10-06T16:34:42.000+0200",
+                         "processDefinitionId": "aProcessDefinitionId",
+                         "processDefinitionKey": "aProcessDefinitionKey",
+                         "processInstanceId": "aProcessInstanceId",
+                         "retries": null,
+                         "suspended": false,
+                         "workerId": "aWorkerId",
+                         "topicName": "createOrder",
+                         "tenantId": null,
+                         "variables": {},
+                         "priority": 0,
+                         "businessKey": "default",
+                         "extensionProperties": {
+                             "property2": "value2",
+                             "property1": "value1"
+                           }
+                         }
+                       ]
                      }'
         ] />
 
@@ -175,3 +220,5 @@
 
   }
 }
+
+</#macro>

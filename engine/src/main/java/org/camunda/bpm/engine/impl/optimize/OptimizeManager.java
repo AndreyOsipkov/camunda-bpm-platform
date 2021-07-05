@@ -27,6 +27,7 @@ import org.camunda.bpm.engine.impl.db.CompositePermissionCheck;
 import org.camunda.bpm.engine.impl.db.PermissionCheckBuilder;
 import org.camunda.bpm.engine.impl.db.sql.DbSqlSessionFactory;
 import org.camunda.bpm.engine.impl.persistence.AbstractManager;
+import org.camunda.bpm.engine.impl.persistence.entity.HistoricIncidentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.optimize.OptimizeHistoricIdentityLinkLogEntity;
 import org.camunda.bpm.engine.impl.util.CollectionUtil;
 
@@ -121,9 +122,12 @@ public class OptimizeManager extends AbstractManager {
     checkIsAuthorizedToReadHistoryAndTenants();
 
     String[] operationTypes = new String[]{
-      UserOperationLogEntry.OPERATION_TYPE_ASSIGN,
-      UserOperationLogEntry.OPERATION_TYPE_CLAIM,
-      UserOperationLogEntry.OPERATION_TYPE_COMPLETE};
+      UserOperationLogEntry.OPERATION_TYPE_SUSPEND_JOB,
+      UserOperationLogEntry.OPERATION_TYPE_ACTIVATE_JOB,
+      UserOperationLogEntry.OPERATION_TYPE_SUSPEND_PROCESS_DEFINITION,
+      UserOperationLogEntry.OPERATION_TYPE_ACTIVATE_PROCESS_DEFINITION,
+      UserOperationLogEntry.OPERATION_TYPE_SUSPEND,
+      UserOperationLogEntry.OPERATION_TYPE_ACTIVATE};
     Map<String, Object> params = new HashMap<>();
     params.put("occurredAfter", occurredAfter);
     params.put("occurredAt", occurredAt);
@@ -190,6 +194,34 @@ public class OptimizeManager extends AbstractManager {
   }
 
   @SuppressWarnings("unchecked")
+  public List<HistoricIncidentEntity> getCompletedHistoricIncidents(Date finishedAfter,
+                                                                    Date finishedAt,
+                                                                    int maxResults) {
+    checkIsAuthorizedToReadHistoryAndTenants();
+
+    Map<String, Object> params = new HashMap<>();
+    params.put("finishedAfter", finishedAfter);
+    params.put("finishedAt", finishedAt);
+    params.put("maxResults", maxResults);
+
+    return getDbEntityManager().selectList("selectCompletedHistoricIncidentsPage", params);
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<HistoricIncidentEntity> getOpenHistoricIncidents(Date createdAfter,
+                                                               Date createdAt,
+                                                               int maxResults) {
+    checkIsAuthorizedToReadHistoryAndTenants();
+
+    Map<String, Object> params = new HashMap<>();
+    params.put("createdAfter", createdAfter);
+    params.put("createdAt", createdAt);
+    params.put("maxResults", maxResults);
+
+    return getDbEntityManager().selectList("selectOpenHistoricIncidentsPage", params);
+  }
+
+  @SuppressWarnings("unchecked")
   public List<HistoricDecisionInstance> getHistoricDecisionInstances(Date evaluatedAfter,
                                                                      Date evaluatedAt,
                                                                      int maxResults) {
@@ -210,8 +242,12 @@ public class OptimizeManager extends AbstractManager {
         .includeInputs()
         .includeOutputs();
 
-    getHistoricDecisionInstanceManager()
-      .enrichHistoricDecisionsWithInputsAndOutputs(query, decisionInstances);
+    List<List<HistoricDecisionInstance>> partitions = CollectionUtil.partition(decisionInstances, DbSqlSessionFactory.MAXIMUM_NUMBER_PARAMS);
+
+    for (List<HistoricDecisionInstance> partition : partitions) {
+      getHistoricDecisionInstanceManager()
+        .enrichHistoricDecisionsWithInputsAndOutputs(query, partition);
+    }
 
     return decisionInstances;
   }

@@ -16,35 +16,39 @@
  */
 package org.camunda.bpm.engine.test.api.identity;
 
-import org.camunda.bpm.engine.IdentityService;
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.identity.User;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.digest.*;
-import org.camunda.bpm.engine.test.api.identity.util.*;
-import org.camunda.bpm.engine.test.util.ProcessEngineBootstrapRule;
-import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
-import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
-import org.junit.*;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNot.not;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNot.not;
+import org.camunda.bpm.engine.IdentityService;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.identity.User;
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.camunda.bpm.engine.impl.digest.PasswordEncryptionException;
+import org.camunda.bpm.engine.impl.digest.PasswordEncryptor;
+import org.camunda.bpm.engine.impl.digest.PasswordManager;
+import org.camunda.bpm.engine.impl.digest.SaltGenerator;
+import org.camunda.bpm.engine.impl.digest.ShaHashDigest;
+import org.camunda.bpm.engine.test.api.identity.util.MyConstantSaltGenerator;
+import org.camunda.bpm.engine.test.api.identity.util.MyCustomPasswordEncryptor;
+import org.camunda.bpm.engine.test.api.identity.util.MyCustomPasswordEncryptorCreatingPrefixThatCannotBeResolved;
+import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class PasswordHashingTest {
 
   protected static ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule();
   protected static ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
@@ -162,12 +166,10 @@ public class PasswordHashingTest {
     additionalEncryptorsForPasswordChecking.add(new ShaHashDigest());
     PasswordEncryptor defaultEncryptor = new ShaHashDigest();
 
-    // then
-    thrown.expect(PasswordEncryptionException.class);
-    thrown.expectMessage("Hash algorithm with the name 'SHA' was already added");
-
-    // when
-    setEncryptors(defaultEncryptor, additionalEncryptorsForPasswordChecking);
+    // when/then
+    assertThatThrownBy(() -> setEncryptors(defaultEncryptor, additionalEncryptorsForPasswordChecking))
+      .isInstanceOf(PasswordEncryptionException.class)
+      .hasMessageContaining("Hash algorithm with the name 'SHA' was already added");
   }
 
   @Test
@@ -177,14 +179,12 @@ public class PasswordHashingTest {
     User user = identityService.newUser(USER_NAME);
     user.setPassword(PASSWORD);
     identityService.saveUser(user);
-    user = identityService.createUserQuery().userId(USER_NAME).singleResult();
+    String userId = identityService.createUserQuery().userId(USER_NAME).singleResult().getId();
 
-    // then
-    thrown.expect(PasswordEncryptionException.class);
-    thrown.expectMessage("Could not resolve hash algorithm name of a hashed password");
-
-    // when
-    identityService.checkPassword(user.getId(), PASSWORD);
+    // when/then
+    assertThatThrownBy(() -> identityService.checkPassword(userId, PASSWORD))
+      .isInstanceOf(PasswordEncryptionException.class)
+      .hasMessageContaining("Could not resolve hash algorithm name of a hashed password");
   }
 
   @Test

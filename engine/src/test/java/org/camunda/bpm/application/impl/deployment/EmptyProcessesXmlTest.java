@@ -16,17 +16,17 @@
  */
 package org.camunda.bpm.application.impl.deployment;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Map;
 
 import org.camunda.bpm.application.impl.metadata.spi.ProcessArchiveXml;
 import org.camunda.bpm.application.impl.metadata.spi.ProcessesXml;
 import org.camunda.bpm.engine.repository.ResumePreviousBy;
-
-import junit.framework.TestCase;
+import org.junit.Test;
 
 /**
  * <p>Testcase verifying the default properties in the empty processes.xml</p>
@@ -34,8 +34,9 @@ import junit.framework.TestCase;
  * @author Daniel Meyer
  *
  */
-public class EmptyProcessesXmlTest extends TestCase {
+public class EmptyProcessesXmlTest {
 
+  @Test
   public void testDefaultValues() {
 
     ProcessesXml emptyProcessesXml = ProcessesXml.EMPTY_PROCESSES_XML;
@@ -71,10 +72,10 @@ public class EmptyProcessesXmlTest extends TestCase {
     String isDeployChangedOnly = properties.get(ProcessArchiveXml.PROP_IS_DEPLOY_CHANGED_ONLY);
     assertNotNull(isDeployChangedOnly);
     assertEquals(Boolean.FALSE.toString(), isDeployChangedOnly);
-    
+
     String resumePreviousBy = properties.get(ProcessArchiveXml.PROP_RESUME_PREVIOUS_BY);
-    assertThat(resumePreviousBy, is(notNullValue()));
-    assertThat(resumePreviousBy, is(ResumePreviousBy.RESUME_BY_PROCESS_DEFINITION_KEY));
+    assertThat(resumePreviousBy).isNotNull();
+    assertThat(resumePreviousBy).isSameAs(ResumePreviousBy.RESUME_BY_PROCESS_DEFINITION_KEY);
   }
 
 }

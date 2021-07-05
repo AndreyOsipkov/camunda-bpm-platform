@@ -40,25 +40,46 @@ public interface TaskQuery extends Query<TaskQuery, Task>{
    */
   TaskQuery taskId(String taskId);
 
-  /** Only select tasks with the given name */
+  /** Only select tasks with the given task ids. */
+  TaskQuery taskIdIn(String... taskIds);
+
+  /**
+   * Only select tasks with the given name.
+   * The query will match the names of tasks in a case-insensitive way.
+   */
   TaskQuery taskName(String name);
 
-  /** Only select tasks with a name not matching the given name */
+  /**
+   * Only select tasks with a name not matching the given name/
+   * The query will match the names of tasks in a case-insensitive way.
+   */
   TaskQuery taskNameNotEqual(String name);
 
-  /** Only select tasks with a name matching the parameter.
-   *  The syntax is that of SQL: for example usage: nameLike(%camunda%)*/
+  /**
+   * Only select tasks with a name matching the parameter.
+   * The syntax is that of SQL: for example usage: nameLike(%camunda%).
+   * The query will match the names of tasks in a case-insensitive way.
+   */
   TaskQuery taskNameLike(String nameLike);
 
-  /** Only select tasks with a name not matching the parameter.
-   *  The syntax is that of SQL: for example usage: nameNotLike(%camunda%)*/
+  /**
+   * Only select tasks with a name not matching the parameter.
+   * The syntax is that of SQL: for example usage: nameNotLike(%camunda%)
+   * The query will match the names of tasks in a case-insensitive way.
+   */
   TaskQuery taskNameNotLike(String nameNotLike);
 
-  /** Only select tasks with the given description. */
+  /**
+   * Only select tasks with the given description.
+   * The query will match the descriptions of tasks in a case-insensitive way.
+   */
   TaskQuery taskDescription(String description);
 
-  /** Only select tasks with a description matching the parameter .
-   *  The syntax is that of SQL: for example usage: descriptionLike(%camunda%)*/
+  /**
+   * Only select tasks with a description matching the parameter .
+   * The syntax is that of SQL: for example usage: descriptionLike(%camunda%)
+   * The query will match the descriptions of tasks in a case-insensitive way.
+   */
   TaskQuery taskDescriptionLike(String descriptionLike);
 
   /** Only select tasks with the given priority. */
@@ -519,6 +540,12 @@ public interface TaskQuery extends Query<TaskQuery, Task>{
 
   /**
    * Only select tasks which are part of a process that have a variable
+   * with the given name and not matching the given value.
+   * The syntax is that of SQL: for example usage: valueNotLike(%value%)*/
+  TaskQuery processVariableValueNotLike(String variableName, String variableValue);
+
+  /**
+   * Only select tasks which are part of a process that have a variable
    * with the given name and a value greater than the given one.
    */
   TaskQuery processVariableValueGreaterThan(String variableName, Object variableValue);
@@ -579,6 +606,20 @@ public interface TaskQuery extends Query<TaskQuery, Task>{
    * starts with (string%), ends with (%string) or contains (%string%).
    */
   TaskQuery caseInstanceVariableValueLike(String variableName, String variableValue);
+
+  /**
+   * Only select tasks which are part of a case instance that have a variable value
+   * not like the given value.
+   *
+   * This be used on string variables only.
+   *
+   * @param name variable name, cannot be null.
+   *
+   * @param value variable value. The string can include the
+   * wildcard character '%' to express like-strategy:
+   * starts with (string%), ends with (%string) or contains (%string%).
+   */
+  TaskQuery caseInstanceVariableValueNotLike(String variableName, String variableValue);
 
   /**
    * Only select tasks which are part of a case instance that have a variable
@@ -803,11 +844,33 @@ public interface TaskQuery extends Query<TaskQuery, Task>{
    */
   TaskQuery initializeFormKeys();
 
-  /** Only select tasks with one of the given tenant ids. */
+  /**
+   * Only select tasks with one of the given tenant ids.
+   *
+   * @throws ProcessEngineException
+   *   <ul>
+   *     <li>When a query is executed and {@link #withoutTenantId()} has been executed on
+   *         the "and query" instance. No exception is thrown when a query is executed
+   *         and {@link #withoutTenantId()} has been executed on the "or query" instance.
+   *     </li>
+   *     <li>When a <code>null</code> tenant id is passed.</li>
+   *   </ul>
+   */
   TaskQuery tenantIdIn(String... tenantIds);
 
-  /** Only select tasks which have no tenant id. */
+  /**
+   * Only select tasks which have no tenant id.
+   *
+   * @throws ProcessEngineException When query is executed and {@link #tenantIdIn(String...)}
+   *     has been executed on the "and query" instance. No exception is thrown when query is
+   *     executed and {@link #tenantIdIn(String...)} has been executed on the "or query" instance.
+   */
   TaskQuery withoutTenantId();
+
+  /**
+   * Only select tasks which have no due date.
+   */
+  TaskQuery withoutDueDate();
 
   // ordering ////////////////////////////////////////////////////////////
 

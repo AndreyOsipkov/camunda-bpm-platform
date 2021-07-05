@@ -354,6 +354,7 @@ public class IncidentRestServiceQueryTest extends AbstractRestServiceTest {
     String returnedIncidentMessage = from(content).getString("[0].incidentMessage");
     String returnedTenantId = from(content).getString("[0].tenantId");
     String returnedJobDefinitionId = from(content).getString("[0].jobDefinitionId");
+    String returnedAnnotation = from(content).getString("[0].annotation");
 
     Assert.assertEquals(MockProvider.EXAMPLE_INCIDENT_ID, returnedId);
     Assert.assertEquals(MockProvider.EXAMPLE_INCIDENT_PROC_INST_ID, returnedProcessInstanceId);
@@ -369,6 +370,7 @@ public class IncidentRestServiceQueryTest extends AbstractRestServiceTest {
     Assert.assertEquals(MockProvider.EXAMPLE_INCIDENT_MESSAGE, returnedIncidentMessage);
     Assert.assertEquals(MockProvider.EXAMPLE_TENANT_ID, returnedTenantId);
     Assert.assertEquals(MockProvider.EXAMPLE_JOB_DEFINITION_ID, returnedJobDefinitionId);
+    Assert.assertEquals(MockProvider.EXAMPLE_USER_OPERATION_ANNOTATION, returnedAnnotation);
   }
 
   @Test
@@ -405,6 +407,31 @@ public class IncidentRestServiceQueryTest extends AbstractRestServiceTest {
       .when().get(INCIDENT_QUERY_URL);
 
     verify(mockedQuery).incidentMessage(incidentMessage);
+  }
+
+  @Test
+  public void testQueryByIncidentMessageLike() {
+    String incidentMessage = MockProvider.EXAMPLE_INCIDENT_MESSAGE;
+
+    given()
+            .queryParam("incidentMessageLike", incidentMessage)
+            .then().expect().statusCode(Status.OK.getStatusCode())
+            .when().get(INCIDENT_QUERY_URL);
+
+    verify(mockedQuery).incidentMessageLike(incidentMessage);
+  }
+
+  @Test
+  public void testQueryByIncidentTimestampBeforeAndAfter() {
+    given()
+            .queryParam("incidentTimestampBefore", MockProvider.EXAMPLE_INCIDENT_TIMESTAMP_BEFORE)
+            .queryParam("incidentTimestampAfter", MockProvider.EXAMPLE_INCIDENT_TIMESTAMP_AFTER)
+            .then().expect().statusCode(Status.OK.getStatusCode())
+            .when().get(INCIDENT_QUERY_URL);
+
+    verify(mockedQuery).incidentTimestampBefore(DateTimeUtil.parseDate(MockProvider.EXAMPLE_INCIDENT_TIMESTAMP_BEFORE));
+    verify(mockedQuery).incidentTimestampAfter(DateTimeUtil.parseDate(MockProvider.EXAMPLE_INCIDENT_TIMESTAMP_AFTER));
+    verify(mockedQuery).list();
   }
 
   @Test

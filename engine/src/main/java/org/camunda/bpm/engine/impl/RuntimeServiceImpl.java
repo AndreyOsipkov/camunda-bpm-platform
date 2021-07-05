@@ -43,9 +43,11 @@ import org.camunda.bpm.engine.impl.cmd.MessageEventReceivedCmd;
 import org.camunda.bpm.engine.impl.cmd.PatchExecutionVariablesCmd;
 import org.camunda.bpm.engine.impl.cmd.RemoveExecutionVariablesCmd;
 import org.camunda.bpm.engine.impl.cmd.ResolveIncidentCmd;
+import org.camunda.bpm.engine.impl.cmd.SetAnnotationForIncidentCmd;
 import org.camunda.bpm.engine.impl.cmd.SetExecutionVariablesCmd;
 import org.camunda.bpm.engine.impl.cmd.SignalCmd;
 import org.camunda.bpm.engine.impl.cmd.batch.DeleteProcessInstanceBatchCmd;
+import org.camunda.bpm.engine.impl.cmd.batch.variables.SetVariablesToProcessInstancesBatchCmd;
 import org.camunda.bpm.engine.impl.migration.MigrationPlanBuilderImpl;
 import org.camunda.bpm.engine.impl.migration.MigrationPlanExecutionBuilderImpl;
 import org.camunda.bpm.engine.impl.runtime.UpdateProcessInstanceSuspensionStateBuilderImpl;
@@ -400,6 +402,48 @@ public class RuntimeServiceImpl extends ServiceImpl implements RuntimeService {
     }
   }
 
+  public Batch setVariablesAsync(List<String> processInstanceIds,
+                                 ProcessInstanceQuery processInstanceQuery,
+                                 HistoricProcessInstanceQuery historicProcessInstanceQuery,
+                                 Map<String, ?> variables) {
+    return commandExecutor.execute(new SetVariablesToProcessInstancesBatchCmd(
+        processInstanceIds,
+        processInstanceQuery,
+        historicProcessInstanceQuery,
+        variables
+    ));
+  }
+
+  public Batch setVariablesAsync(List<String> processInstanceIds,
+                                 Map<String, ?> variables) {
+    return commandExecutor.execute(new SetVariablesToProcessInstancesBatchCmd(
+        processInstanceIds,
+        null,
+        null,
+        variables
+    ));
+  }
+
+  public Batch setVariablesAsync(ProcessInstanceQuery processInstanceQuery,
+                                 Map<String, ?> variables) {
+    return commandExecutor.execute(new SetVariablesToProcessInstancesBatchCmd(
+        null,
+        processInstanceQuery,
+        null,
+        variables
+    ));
+  }
+
+  public Batch setVariablesAsync(HistoricProcessInstanceQuery historicProcessInstanceQuery,
+                                 Map<String, ?> variables) {
+    return commandExecutor.execute(new SetVariablesToProcessInstancesBatchCmd(
+        null,
+        null,
+        historicProcessInstanceQuery,
+        variables
+    ));
+  }
+
   @Override
   public void removeVariable(String executionId, String variableName) {
     Collection<String> variableNames = new ArrayList<String>();
@@ -709,16 +753,29 @@ public class RuntimeServiceImpl extends ServiceImpl implements RuntimeService {
     return new RestartProcessInstanceBuilderImpl(commandExecutor, processDefinitionId);
   }
 
+  @Override
   public Incident createIncident(String incidentType, String executionId, String configuration) {
     return createIncident(incidentType, executionId, configuration, null);
   }
 
+  @Override
   public Incident createIncident(String incidentType, String executionId, String configuration, String message) {
     return commandExecutor.execute(new CreateIncidentCmd(incidentType, executionId, configuration, message));
   }
 
+  @Override
   public void resolveIncident(String incidentId) {
     commandExecutor.execute(new ResolveIncidentCmd(incidentId));
+  }
+
+  @Override
+  public void setAnnotationForIncidentById(String incidentId, String annotation) {
+    commandExecutor.execute(new SetAnnotationForIncidentCmd(incidentId, annotation));
+  }
+
+  @Override
+  public void clearAnnotationForIncidentById(String incidentId) {
+    commandExecutor.execute(new SetAnnotationForIncidentCmd(incidentId, null));
   }
 
   @Override

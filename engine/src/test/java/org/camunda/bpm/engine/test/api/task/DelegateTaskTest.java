@@ -16,11 +16,9 @@
  */
 package org.camunda.bpm.engine.test.api.task;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.text.ParseException;
@@ -37,6 +35,7 @@ import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
@@ -49,7 +48,7 @@ import org.junit.rules.RuleChain;
  */
 public class DelegateTaskTest {
 
-  public ProcessEngineRule engineRule = new ProcessEngineRule(true);
+  public ProcessEngineRule engineRule = new ProvidedProcessEngineRule();
   public ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
 
   private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -78,7 +77,7 @@ public class DelegateTaskTest {
   }
 
   /**
-   * @see http://jira.codehaus.org/browse/ACT-380
+   * @see <a href="http://jira.codehaus.org/browse/ACT-380">http://jira.codehaus.org/browse/ACT-380</a>
    */
   @Test
   @Deployment
@@ -121,8 +120,8 @@ public class DelegateTaskTest {
     String processInstanceId = processInstance.getId();
     Date followUpDate = (Date) runtimeService.getVariable(processInstanceId, "followUp");
 
-    assertThat(followUpDate, notNullValue());
-    assertThat(followUpDate, is(FOLLOW_UP_DATE));
+    assertThat(followUpDate).isNotNull();
+    assertThat(followUpDate).isEqualTo(FOLLOW_UP_DATE);
   }
 
   @Test
@@ -144,8 +143,8 @@ public class DelegateTaskTest {
     Task task = taskService.createTaskQuery().singleResult();
     Date followUpDate = task.getFollowUpDate();
 
-    assertThat(followUpDate, notNullValue());
-    assertThat(followUpDate, is(FOLLOW_UP_DATE));
+    assertThat(followUpDate).isNotNull();
+    assertThat(followUpDate).isEqualTo(FOLLOW_UP_DATE);
   }
 
   public static class GetFollowUpDateListener implements TaskListener {
@@ -153,7 +152,7 @@ public class DelegateTaskTest {
     @Override
     public void notify(DelegateTask delegateTask) {
       Date followUpDate = delegateTask.getFollowUpDate();
-      assertThat(followUpDate, notNullValue());
+      assertThat(followUpDate).isNotNull();
 
       delegateTask.setVariable("followUp", followUpDate);
     }

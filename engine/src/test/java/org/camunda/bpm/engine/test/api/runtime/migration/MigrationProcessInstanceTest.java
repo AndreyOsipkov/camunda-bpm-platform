@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
@@ -33,7 +33,6 @@ import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.api.runtime.migration.models.ProcessModels;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
-import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,10 +42,10 @@ import org.junit.rules.RuleChain;
 public class MigrationProcessInstanceTest {
 
   protected ProcessEngineRule rule = new ProvidedProcessEngineRule();
-  protected MigrationTestRule testHelper = new MigrationTestRule(rule);
+  protected MigrationTestRule testRule = new MigrationTestRule(rule);
 
   @Rule
-  public RuleChain ruleChain = RuleChain.outerRule(rule).around(testHelper);
+  public RuleChain ruleChain = RuleChain.outerRule(rule).around(testRule);
 
   protected RuntimeService runtimeService;
 
@@ -57,8 +56,8 @@ public class MigrationProcessInstanceTest {
 
   @Test
   public void testMigrateWithIdVarargsArray() {
-    ProcessDefinition sourceDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
       .mapEqualActivities()
@@ -85,13 +84,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("migration plan is null"));
+      assertThat(e.getMessage()).contains("migration plan is null");
     }
   }
 
   @Test
   public void testNullProcessInstanceIdsList() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -101,13 +100,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids is empty"));
+      assertThat(e.getMessage()).contains("process instance ids is empty");
     }
   }
 
   @Test
   public void testProcessInstanceIdsListWithNullValue() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -117,13 +116,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids contains null value"));
+      assertThat(e.getMessage()).contains("process instance ids contains null value");
     }
   }
 
   @Test
   public void testNullProcessInstanceIdsArray() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -133,13 +132,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids is empty"));
+      assertThat(e.getMessage()).contains("process instance ids is empty");
     }
   }
 
   @Test
   public void testProcessInstanceIdsArrayWithNullValue() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -149,13 +148,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids contains null value"));
+      assertThat(e.getMessage()).contains("process instance ids contains null value");
     }
   }
 
   @Test
   public void testEmptyProcessInstanceIdsList() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -165,13 +164,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids is empty"));
+      assertThat(e.getMessage()).contains("process instance ids is empty");
     }
   }
 
   @Test
   public void testEmptyProcessInstanceIdsArray() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -181,15 +180,15 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids is empty"));
+      assertThat(e.getMessage()).contains("process instance ids is empty");
     }
   }
 
   @Test
   public void testNotMigrateProcessInstanceOfWrongProcessDefinition() {
-    ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition wrongProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition sourceProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition wrongProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.SUBPROCESS_PROCESS);
 
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(wrongProcessDefinition.getId());
 
@@ -202,14 +201,14 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.startsWith("ENGINE-23002"));
+      assertThat(e.getMessage()).startsWith("ENGINE-23002");
     }
   }
 
   @Test
   public void testNotMigrateUnknownProcessInstance() {
-    ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -220,14 +219,14 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.startsWith("ENGINE-23003"));
+      assertThat(e.getMessage()).startsWith("ENGINE-23003");
     }
   }
 
   @Test
   public void testNotMigrateNullProcessInstance() {
-    ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -238,7 +237,7 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids contains null value"));
+      assertThat(e.getMessage()).contains("process instance ids contains null value");
     }
   }
 
@@ -246,8 +245,8 @@ public class MigrationProcessInstanceTest {
   public void testMigrateProcessInstanceQuery() {
     int processInstanceCount = 10;
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -274,7 +273,7 @@ public class MigrationProcessInstanceTest {
 
   @Test
   public void testNullProcessInstanceQuery() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -284,13 +283,13 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids is empty"));
+      assertThat(e.getMessage()).contains("process instance ids is empty");
     }
   }
 
   @Test
   public void testEmptyProcessInstanceQuery() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
       .mapEqualActivities()
       .build();
@@ -303,14 +302,14 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("process instance ids is empty"));
+      assertThat(e.getMessage()).contains("process instance ids is empty");
     }
   }
 
   @Test
   public void testProcessInstanceQueryOfWrongProcessDefinition() {
-    ProcessDefinition testProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition wrongProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition testProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition wrongProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.SUBPROCESS_PROCESS);
 
     runtimeService.startProcessInstanceById(wrongProcessDefinition.getId());
 
@@ -326,14 +325,14 @@ public class MigrationProcessInstanceTest {
       fail("Should not be able to migrate");
     }
     catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), CoreMatchers.startsWith("ENGINE-23002"));
+      assertThat(e.getMessage()).startsWith("ENGINE-23002");
     }
   }
 
   @Test
   public void testProcessInstanceIdsAndQuery() {
-    ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -357,8 +356,8 @@ public class MigrationProcessInstanceTest {
 
   @Test
   public void testOverlappingProcessInstanceIdsAndQuery() {
-    ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testRule.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()

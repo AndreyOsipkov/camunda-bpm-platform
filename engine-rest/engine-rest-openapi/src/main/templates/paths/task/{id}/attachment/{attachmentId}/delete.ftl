@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "deleteAttachment"
       tag = "Task Attachment"
+      summary = "Delete"
       desc = "Removes an attachment from a task by id." />
 
   "parameters" : [
@@ -32,7 +34,7 @@
 
     <@lib.response
         code = "403"
-        dto = "ExceptionDto"
+        dto = "AuthorizationExceptionDto"
         desc = "The history of the engine is disabled. See the [Introduction](/reference/rest/overview/#error-handling)
                 for the error response format." />
 
@@ -46,3 +48,5 @@
 
   }
 }
+
+</#macro>

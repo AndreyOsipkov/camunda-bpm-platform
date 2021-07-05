@@ -16,11 +16,11 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProvider;
 import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProviderCaseInstanceContext;
 import org.camunda.bpm.engine.impl.cfg.multitenancy.TenantIdProviderHistoricDecisionInstanceContext;
@@ -49,20 +49,13 @@ public class MultiTenancyMigrationTenantProviderTest {
   protected static final String TENANT_ONE = "tenant1";
   protected static final String TENANT_TWO = "tenant2";
 
+  @ClassRule
+  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule(configuration -> {
+    TenantIdProvider tenantIdProvider = new VariableBasedTenantIdProvider();
+    configuration.setTenantIdProvider(tenantIdProvider);
+  });
   protected ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
   protected ProcessEngineTestRule testHelper = new ProcessEngineTestRule(engineRule);
-
-  @ClassRule
-  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule() {
-    @Override
-    public ProcessEngineConfiguration configureEngine(ProcessEngineConfigurationImpl configuration) {
-
-      TenantIdProvider tenantIdProvider = new VariableBasedTenantIdProvider();
-      configuration.setTenantIdProvider(tenantIdProvider);
-
-      return configuration;
-    }
-  };
 
   @Rule
   public RuleChain tenantRuleChain = RuleChain.outerRule(engineRule).around(testHelper);
@@ -87,9 +80,8 @@ public class MultiTenancyMigrationTenantProviderTest {
         .execute();
       Assert.fail("exception expected");
     } catch (ProcessEngineException e) {
-      Assert.assertThat(e.getMessage(),
-          CoreMatchers.containsString("Cannot migrate process instance '" + processInstance.getId() + "' "
-              + "to a process definition of a different tenant ('tenant1' != 'tenant2')"));
+      assertThat(e.getMessage()).contains("Cannot migrate process instance '" + processInstance.getId() + "' "
+              + "to a process definition of a different tenant ('tenant1' != 'tenant2')");
     }
 
     // then

@@ -16,6 +16,17 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.bpm.engine.impl.migration.validation.instruction.ConditionalEventUpdateEventTriggerValidator.MIGRATION_CONDITIONAL_VALIDATION_ERROR_MSG;
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.impl.jobexecutor.TimerExecuteNestedActivityJobHandler;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
@@ -35,16 +46,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.joda.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.camunda.bpm.engine.impl.migration.validation.instruction.ConditionalEventUpdateEventTriggerValidator.MIGRATION_CONDITIONAL_VALIDATION_ERROR_MSG;
-import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
-import static org.junit.Assert.*;
 
 public class MigrationBoundaryEventsTest {
 
@@ -59,9 +61,6 @@ public class MigrationBoundaryEventsTest {
 
   protected ProcessEngineRule rule = new ProvidedProcessEngineRule();
   protected MigrationTestRule testHelper = new MigrationTestRule(rule);
-
-  @Rule
-  public ExpectedException exceptionRule = ExpectedException.none();
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(rule).around(testHelper);
@@ -608,15 +607,15 @@ public class MigrationBoundaryEventsTest {
     ProcessDefinition sourceProcessDefinition = testHelper.deployAndGetDefinition(sourceProcess);
     ProcessDefinition targetProcessDefinition = testHelper.deployAndGetDefinition(sourceProcess);
 
-    // expected migration validation exception
-    exceptionRule.expect(MigrationPlanValidationException.class);
-    exceptionRule.expectMessage(MIGRATION_CONDITIONAL_VALIDATION_ERROR_MSG);
-
     // when conditional boundary event is migrated without update event trigger
-    rule.getRuntimeService()
-      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
-      .mapActivities(USER_TASK_ID, USER_TASK_ID)
-      .mapActivities(BOUNDARY_ID, BOUNDARY_ID)
-      .build();
+    // then
+    assertThatThrownBy(() -> rule.getRuntimeService()
+        .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities(USER_TASK_ID, USER_TASK_ID)
+        .mapActivities(BOUNDARY_ID, BOUNDARY_ID)
+        .build())
+      .isInstanceOf(MigrationPlanValidationException.class)
+      .hasMessageContaining(MIGRATION_CONDITIONAL_VALIDATION_ERROR_MSG);
+
   }
 }

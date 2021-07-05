@@ -16,9 +16,8 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy.tenantcheck;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -30,14 +29,14 @@ import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.repository.DecisionRequirementsDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 /**
- * 
+ *
  * @author Deivarayan Azhagappan
  *
  */
@@ -45,22 +44,16 @@ import org.junit.rules.RuleChain;
 public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
   protected static final String TENANT_ONE = "tenant1";
-
   protected static final String DRG_DMN = "org/camunda/bpm/engine/test/api/multitenancy/DecisionRequirementsGraph.dmn";
-  
   protected static final String DRD_DMN = "org/camunda/bpm/engine/test/api/multitenancy/DecisionRequirementsGraph.png";
 
-  protected ProcessEngineRule engineRule = new ProcessEngineRule(true);
-
+  protected ProcessEngineRule engineRule = new ProvidedProcessEngineRule();
   protected ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
-
-  protected String decisionRequirementsDefinitionId;
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
 
-  @Rule
-  public ExpectedException thrown= ExpectedException.none();
+  protected String decisionRequirementsDefinitionId;
 
   protected RepositoryService repositoryService;
   protected IdentityService identityService;
@@ -81,11 +74,10 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
   public void failToGetDecisionRequirementsDefinitionNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
-    // declare expected exception
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Cannot get the decision requirements definition");
-
-    repositoryService.getDecisionRequirementsDefinition(decisionRequirementsDefinitionId);
+    // when/then
+    assertThatThrownBy(() -> repositoryService.getDecisionRequirementsDefinition(decisionRequirementsDefinitionId))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Cannot get the decision requirements definition");
   }
 
   @Test
@@ -94,7 +86,7 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
     DecisionRequirementsDefinition definition = repositoryService.getDecisionRequirementsDefinition(decisionRequirementsDefinitionId);
 
-    assertThat(definition.getTenantId(), is(TENANT_ONE));
+    assertThat(definition.getTenantId()).isEqualTo(TENANT_ONE);
   }
 
   @Test
@@ -104,18 +96,17 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
     DecisionRequirementsDefinition definition = repositoryService.getDecisionRequirementsDefinition(decisionRequirementsDefinitionId);
 
-    assertThat(definition.getTenantId(), is(TENANT_ONE));
+    assertThat(definition.getTenantId()).isEqualTo(TENANT_ONE);
   }
 
   @Test
   public void failToGetDecisionRequirementsModelNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
-    // declare expected exception
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Cannot get the decision requirements definition");
-
-    repositoryService.getDecisionRequirementsModel(decisionRequirementsDefinitionId);
+    // when/then
+    assertThatThrownBy(() -> repositoryService.getDecisionRequirementsModel(decisionRequirementsDefinitionId))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Cannot get the decision requirements definition");
   }
 
   @Test
@@ -124,7 +115,7 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
     InputStream inputStream = repositoryService.getDecisionRequirementsModel(decisionRequirementsDefinitionId);
 
-    assertThat(inputStream, notNullValue());
+    assertThat(inputStream).isNotNull();
   }
 
   @Test
@@ -134,18 +125,17 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
     InputStream inputStream = repositoryService.getDecisionRequirementsModel(decisionRequirementsDefinitionId);
 
-    assertThat(inputStream, notNullValue());
+    assertThat(inputStream).isNotNull();
   }
 
   @Test
   public void failToGetDecisionRequirementsDiagramNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
-    // declare expected exception
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Cannot get the decision requirements definition");
-
-    repositoryService.getDecisionRequirementsDiagram(decisionRequirementsDefinitionId);
+    // when/then
+    assertThatThrownBy(() -> repositoryService.getDecisionRequirementsDiagram(decisionRequirementsDefinitionId))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Cannot get the decision requirements definition");
   }
 
   @Test
@@ -154,7 +144,7 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
     InputStream inputStream = repositoryService.getDecisionRequirementsDiagram(decisionRequirementsDefinitionId);
 
-    assertThat(inputStream, notNullValue());
+    assertThat(inputStream).isNotNull();
   }
 
   @Test
@@ -164,7 +154,7 @@ public class MultiTenancyDecisionRequirementsDefinitionCmdsTenantCheckTest {
 
     InputStream inputStream = repositoryService.getDecisionRequirementsDiagram(decisionRequirementsDefinitionId);
 
-    assertThat(inputStream, notNullValue());
+    assertThat(inputStream).isNotNull();
   }
 
 }

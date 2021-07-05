@@ -16,10 +16,17 @@
  */
 package org.camunda.bpm.engine.test.api.queries;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.IdentityService;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
-import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.filter.Filter;
@@ -43,14 +50,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 public class BoundedNumberOfMaxResultsTest {
 
@@ -60,9 +60,6 @@ public class BoundedNumberOfMaxResultsTest {
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testHelper);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   protected HistoryService historyService;
   protected RuntimeService runtimeService;
@@ -217,12 +214,11 @@ public class BoundedNumberOfMaxResultsTest {
     ProcessInstanceQuery processInstanceQuery =
         runtimeService.createProcessInstanceQuery();
 
-    // then
-    thrown.expect(BadUserRequestException.class);
-    thrown.expectMessage("An unbound number of results is forbidden!");
+    // when/then
+    assertThatThrownBy(() -> processInstanceQuery.list())
+      .isInstanceOf(BadUserRequestException.class)
+      .hasMessageContaining("An unbound number of results is forbidden!");
 
-    // when
-    processInstanceQuery.list();
   }
 
   @Test
@@ -231,12 +227,10 @@ public class BoundedNumberOfMaxResultsTest {
     ProcessInstanceQuery processInstanceQuery =
         runtimeService.createProcessInstanceQuery();
 
-    // then
-    thrown.expect(BadUserRequestException.class);
-    thrown.expectMessage("Max results limit of 10 exceeded!");
-
-    // when
-    processInstanceQuery.listPage(0, 11);
+    // when/then
+    assertThatThrownBy(() -> processInstanceQuery.listPage(0, 11))
+      .isInstanceOf(BadUserRequestException.class)
+      .hasMessageContaining("Max results limit of 10 exceeded!");
   }
 
   @Test

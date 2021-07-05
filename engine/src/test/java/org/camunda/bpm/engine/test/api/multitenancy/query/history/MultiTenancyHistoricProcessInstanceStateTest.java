@@ -16,6 +16,8 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy.query.history;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
@@ -29,9 +31,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * @author Askar Akhmerov
@@ -113,8 +112,7 @@ public class MultiTenancyHistoricProcessInstanceStateTest {
     for (int i = 0; i < processInstances.length; i++) {
       assertThat(
           processEngineRule.getHistoryService().createHistoricProcessInstanceQuery()
-              .processInstanceId(processInstances[i]).singleResult().getState(),
-          is(states[i]));
+              .processInstanceId(processInstances[i]).singleResult().getState()).isEqualTo(states[i]);
     }
   }
 }

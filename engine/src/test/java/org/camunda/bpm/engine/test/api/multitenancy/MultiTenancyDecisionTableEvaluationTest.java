@@ -16,22 +16,21 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 
 import org.camunda.bpm.dmn.engine.DmnDecisionTableResult;
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.repository.DecisionDefinition;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
 import org.camunda.bpm.engine.variable.VariableMap;
 import org.camunda.bpm.engine.variable.Variables;
+import org.junit.Test;
 
-public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEngineTest {
 
   protected static final String DMN_FILE = "org/camunda/bpm/engine/test/api/dmn/Example.dmn";
   protected static final String DMN_FILE_SECOND_VERSION = "org/camunda/bpm/engine/test/api/dmn/Example_v2.dmn";
@@ -44,8 +43,9 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
   protected static final String RESULT_OF_FIRST_VERSION = "ok";
   protected static final String RESULT_OF_SECOND_VERSION = "notok";
 
+  @Test
   public void testFailToEvaluateDecisionByIdWithoutTenantId() {
-    deployment(DMN_FILE);
+   testRule.deploy(DMN_FILE);
 
     DecisionDefinition decisionDefinition = repositoryService.createDecisionDefinitionQuery().singleResult();
 
@@ -56,12 +56,13 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
           .evaluate();
       fail("BadUserRequestException exception");
     } catch(BadUserRequestException e) {
-      assertThat(e.getMessage(), containsString("Cannot specify a tenant-id"));
+      assertThat(e.getMessage()).contains("Cannot specify a tenant-id");
     }
   }
 
+  @Test
   public void testFailToEvaluateDecisionByIdWithTenantId() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     DecisionDefinition decisionDefinition = repositoryService.createDecisionDefinitionQuery().singleResult();
 
@@ -72,13 +73,14 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
           .evaluate();
       fail("BadUserRequestException exception");
     } catch(BadUserRequestException e) {
-      assertThat(e.getMessage(), containsString("Cannot specify a tenant-id"));
+      assertThat(e.getMessage()).contains("Cannot specify a tenant-id");
     }
   }
 
+  @Test
   public void testFailToEvaluateDecisionByKeyForNonExistingTenantID() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
-    deploymentForTenant(TENANT_TWO, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE);
 
     try {
       decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
@@ -87,13 +89,14 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
           .evaluate();
       fail("ProcessEngineException expected");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("no decision definition deployed with key 'decision' and tenant-id 'nonExistingTenantId'"));
+      assertThat(e.getMessage()).contains("no decision definition deployed with key 'decision' and tenant-id 'nonExistingTenantId'");
     }
   }
 
+  @Test
   public void testFailToEvaluateDecisionByKeyForMultipleTenants() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
-    deploymentForTenant(TENANT_TWO, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE);
 
     try {
       decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
@@ -101,12 +104,13 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
           .evaluate();
       fail("ProcessEngineException expected");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("multiple tenants."));
+      assertThat(e.getMessage()).contains("multiple tenants.");
     }
   }
 
+  @Test
   public void testEvaluateDecisionByKeyWithoutTenantId() {
-    deployment(DMN_FILE);
+   testRule.deploy(DMN_FILE);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .variables(createVariables())
@@ -116,8 +120,9 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByKeyForAnyTenants() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .variables(createVariables())
@@ -127,9 +132,10 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
   }
 
 
+  @Test
   public void testEvaluateDecisionByKeyAndTenantId() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
-    deploymentForTenant(TENANT_TWO, DMN_FILE_SECOND_VERSION);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE_SECOND_VERSION);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .variables(createVariables())
@@ -139,9 +145,10 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByKeyLatestVersionAndTenantId() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
-    deploymentForTenant(TENANT_ONE, DMN_FILE_SECOND_VERSION);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE_SECOND_VERSION);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .variables(createVariables())
@@ -151,11 +158,12 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_SECOND_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByKeyVersionAndTenantId() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
-    deploymentForTenant(TENANT_TWO, DMN_FILE);
-    deploymentForTenant(TENANT_TWO, DMN_FILE_SECOND_VERSION);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE_SECOND_VERSION);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .variables(createVariables())
@@ -166,10 +174,11 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByKeyWithoutTenantIdNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
-    deployment(DMN_FILE);
+   testRule.deploy(DMN_FILE);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .decisionDefinitionWithoutTenantId()
@@ -179,10 +188,11 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testFailToEvaluateDecisionByKeyNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     try {
       decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
@@ -191,14 +201,15 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
 
       fail("expected exception");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("no decision definition deployed with key 'decision'"));
+      assertThat(e.getMessage()).contains("no decision definition deployed with key 'decision'");
     }
   }
 
+  @Test
   public void testFailToEvaluateDecisionByKeyWithTenantIdNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     try {
       decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
@@ -208,12 +219,13 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
 
       fail("expected exception");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("Cannot evaluate the decision"));
+      assertThat(e.getMessage()).contains("Cannot evaluate the decision");
     }
   }
 
+  @Test
   public void testFailToEvaluateDecisionByIdNoAuthenticatedTenants() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     DecisionDefinition decisionDefinition = repositoryService
       .createDecisionDefinitionQuery()
@@ -228,15 +240,16 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
 
       fail("expected exception");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("Cannot evaluate the decision"));
+      assertThat(e.getMessage()).contains("Cannot evaluate the decision");
     }
   }
 
+  @Test
   public void testEvaluateDecisionByKeyWithTenantIdAuthenticatedTenant() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
-    deploymentForTenant(TENANT_TWO, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
       .decisionDefinitionTenantId(TENANT_ONE)
@@ -246,8 +259,9 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByIdAuthenticatedTenant() {
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     DecisionDefinition decisionDefinition = repositoryService
         .createDecisionDefinitionQuery()
@@ -262,11 +276,12 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByKeyWithAuthenticatedTenant() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
-    deploymentForTenant(TENANT_TWO, DMN_FILE_SECOND_VERSION);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_TWO, DMN_FILE_SECOND_VERSION);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .variables(createVariables())
@@ -275,11 +290,12 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
     assertThatDecisionHasResult(decisionResult, RESULT_OF_FIRST_VERSION);
   }
 
+  @Test
   public void testEvaluateDecisionByKeyWithTenantIdDisabledTenantCheck() {
     processEngineConfiguration.setTenantCheckEnabled(false);
     identityService.setAuthentication("user", null, null);
 
-    deploymentForTenant(TENANT_ONE, DMN_FILE);
+    testRule.deployForTenant(TENANT_ONE, DMN_FILE);
 
     DmnDecisionTableResult decisionResult = decisionService.evaluateDecisionTableByKey(DECISION_DEFINITION_KEY)
         .decisionDefinitionTenantId(TENANT_ONE)
@@ -294,10 +310,10 @@ public class MultiTenancyDecisionTableEvaluationTest extends PluggableProcessEng
   }
 
   protected void assertThatDecisionHasResult(DmnDecisionTableResult decisionResult, Object expectedValue) {
-    assertThat(decisionResult, is(notNullValue()));
-    assertThat(decisionResult.size(), is(1));
+    assertThat(decisionResult).isNotNull();
+    assertThat(decisionResult.size()).isEqualTo(1);
     String value = decisionResult.getSingleResult().getFirstEntry();
-    assertThat(value, is(expectedValue));
+    assertThat(value).isEqualTo(expectedValue);
   }
 
 }

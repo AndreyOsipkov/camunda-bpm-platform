@@ -16,30 +16,32 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.task.IdentityLink;
 import org.camunda.bpm.engine.task.Task;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.junit.Test;
 
 /**
  * @author Daniel Meyer
  *
  */
-public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
+public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTest {
 
   private static final String tenant1 = "the-tenant-1";
   private static final String tenant2 = "the-tenant-2";
 
+  @Test
   public void testStandaloneTaskCreateWithTenantId() {
 
     // given a transient task with tenant id
@@ -59,6 +61,7 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
     deleteTasks(task);
   }
 
+  @Test
   public void testStandaloneTaskCannotChangeTenantIdIfNull() {
 
     // given a persistent task without tenant id
@@ -77,13 +80,14 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
       fail("Expected an exception");
     }
     catch(ProcessEngineException e) {
-      assertTextPresent("ENGINE-03072 Cannot change tenantId of Task", e.getMessage());
+      testRule.assertTextPresent("ENGINE-03072 Cannot change tenantId of Task", e.getMessage());
     }
 
     // Finally, delete task
     deleteTasks(task);
   }
 
+  @Test
   public void testStandaloneTaskCannotChangeTenantId() {
 
     // given a persistent task with tenant id
@@ -103,13 +107,14 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
       fail("Expected an exception");
     }
     catch(ProcessEngineException e) {
-      assertTextPresent("ENGINE-03072 Cannot change tenantId of Task", e.getMessage());
+      testRule.assertTextPresent("ENGINE-03072 Cannot change tenantId of Task", e.getMessage());
     }
 
     // Finally, delete task
     deleteTasks(task);
   }
 
+  @Test
   public void testStandaloneTaskCannotSetDifferentTenantIdOnSubTask() {
 
     // given a persistent task with a tenant id
@@ -129,12 +134,13 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
       fail("Exception expected.");
     }
     catch(ProcessEngineException e) {
-      assertTextPresent("ENGINE-03073 Cannot set different tenantId on subtask than on parent Task", e.getMessage());
+      testRule.assertTextPresent("ENGINE-03073 Cannot set different tenantId on subtask than on parent Task", e.getMessage());
     }
     // Finally, delete task
     deleteTasks(task);
   }
 
+  @Test
   public void testStandaloneTaskCannotSetDifferentTenantIdOnSubTaskWithNull() {
 
     // given a persistent task without tenant id
@@ -153,12 +159,13 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
       fail("Exception expected.");
     }
     catch(ProcessEngineException e) {
-      assertTextPresent("ENGINE-03073 Cannot set different tenantId on subtask than on parent Task", e.getMessage());
+      testRule.assertTextPresent("ENGINE-03073 Cannot set different tenantId on subtask than on parent Task", e.getMessage());
     }
     // Finally, delete task
     deleteTasks(task);
   }
 
+  @Test
   public void testStandaloneTaskPropagateTenantIdToSubTask() {
 
     // given a persistent task with a tenant id
@@ -181,6 +188,7 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
     deleteTasks(subTask, task);
   }
 
+  @Test
   public void testStandaloneTaskPropagatesTenantIdToVariableInstance() {
     // given a task with tenant id
     Task task = taskService.newTask();
@@ -192,12 +200,13 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
 
     // then a variable instance with the same tenant id is created
     VariableInstance variableInstance = runtimeService.createVariableInstanceQuery().singleResult();
-    assertThat(variableInstance, is(notNullValue()));
-    assertThat(variableInstance.getTenantId(), is(tenant1));
+    assertThat(variableInstance).isNotNull();
+    assertThat(variableInstance.getTenantId()).isEqualTo(tenant1);
 
     deleteTasks(task);
   }
 
+  @Test
   public void testGetIdentityLinkWithTenantIdForCandidateUsers() {
 
     // given
@@ -206,23 +215,24 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
     .userTask("task").camundaCandidateUsers("aUserId")
     .endEvent()
     .done();
-    
-    deploymentForTenant("tenant", oneTaskProcess);
-    
+
+    testRule.deployForTenant("tenant", oneTaskProcess);
+
     ProcessInstance tenantProcessInstance = runtimeService.createProcessInstanceByKey("testProcess")
     .processDefinitionTenantId("tenant")
     .execute();
-    
+
     Task tenantTask = taskService
         .createTaskQuery()
         .processInstanceId(tenantProcessInstance.getId())
         .singleResult();
-    
+
     List<IdentityLink> identityLinks = taskService.getIdentityLinksForTask(tenantTask.getId());
     assertEquals(identityLinks.size(),1);
     assertEquals(identityLinks.get(0).getTenantId(), "tenant");
   }
 
+  @Test
   public void testGetIdentityLinkWithTenantIdForCandidateGroup() {
 
     // given
@@ -231,9 +241,9 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
     .userTask("task").camundaCandidateGroups("aGroupId")
     .endEvent()
     .done();
-    
-    deploymentForTenant("tenant", oneTaskProcess);
-    
+
+    testRule.deployForTenant("tenant", oneTaskProcess);
+
     ProcessInstance tenantProcessInstance = runtimeService.createProcessInstanceByKey("testProcess")
     .processDefinitionTenantId("tenant")
     .execute();
@@ -242,7 +252,7 @@ public class MultiTenancyTaskServiceTest extends PluggableProcessEngineTestCase{
         .createTaskQuery()
         .processInstanceId(tenantProcessInstance.getId())
         .singleResult();
-    
+
     List<IdentityLink> identityLinks = taskService.getIdentityLinksForTask(tenantTask.getId());
     assertEquals(identityLinks.size(),1);
     assertEquals(identityLinks.get(0).getTenantId(), "tenant");

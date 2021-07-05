@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "getExternalTasks"
       tag = "External Task"
+      summary = "Get List"
       desc = "Queries for the external tasks that fulfill given parameters. Parameters may be static as well as dynamic
               runtime properties of executions. The size of the result set can be retrieved by using the
               [Get External Task Count](${docsUrl}/reference/rest/external-task/get-query-count/) method." />
@@ -35,7 +37,6 @@
                            "activityId": "anActivityId",
                            "activityInstanceId": "anActivityInstanceId",
                            "errorMessage": "anErrorMessage",
-                           "errorDetails": "anErrorDetails",
                            "executionId": "anExecutionId",
                            "id": "anExternalTaskId",
                            "lockExpirationTime": "2015-10-06T16:34:42.000+0200",
@@ -54,7 +55,6 @@
                            "activityId": "anotherActivityId",
                            "activityInstanceId": "anotherActivityInstanceId",
                            "errorMessage": "anotherErrorMessage",
-                           "errorDetails": "anotherErrorDetails",
                            "executionId": "anotherExecutionId",
                            "id": "anotherExternalTaskId",
                            "lockExpirationTime": "2015-10-06T16:34:42.000+0200",
@@ -82,3 +82,5 @@
 
   }
 }
+
+</#macro>

@@ -16,9 +16,12 @@
  */
 package org.camunda.bpm.engine.test.dmn.feel;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.camunda.bpm.dmn.feel.impl.juel.FeelSyntaxException;
 import org.camunda.bpm.engine.DecisionService;
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.util.ProcessEngineBootstrapRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
@@ -28,32 +31,18 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.hamcrest.Matchers.is;
 
 public class FeelEnableLegacyBehaviorConfigTest {
 
   @ClassRule
-  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule() {
-    @Override
-    public ProcessEngineConfiguration configureEngine(ProcessEngineConfigurationImpl configuration) {
-
-      configuration.setDmnFeelEnableLegacyBehavior(true);
-
-      return configuration;
-    }
-  };
-
+  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule(configuration ->
+      configuration.setDmnFeelEnableLegacyBehavior(true));
   protected ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
   protected ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
-  protected ExpectedException thrown = ExpectedException.none();
 
   @Rule
-  public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule).around(thrown);
+  public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
 
   protected DecisionService decisionService;
 
@@ -93,18 +82,12 @@ public class FeelEnableLegacyBehaviorConfigTest {
   public void shouldEvaluateInputRule() {
     // given
 
-    // then
-    thrown.expectCause(
-        hasProperty( "message",
-            is("FEEL-01010 Syntax error in expression 'for x in 1..3 return x * 2'"))
-    );
-
-    // when
-    String result = decisionService.evaluateDecisionTableByKey("c",
-        Variables.putValue("cellInput", 6)).getSingleEntry();
-
-    // then
-    assertThat(result).isEqualTo("foo");
+    // when/then
+    assertThatThrownBy(() -> decisionService.evaluateDecisionTableByKey("c",
+        Variables.putValue("cellInput", 6)).getSingleEntry())
+      .hasCauseInstanceOf(FeelSyntaxException.class)
+      .extracting("cause.message")
+      .contains("FEEL-01010 Syntax error in expression 'for x in 1..3 return x * 2'");
   }
 
   @Test

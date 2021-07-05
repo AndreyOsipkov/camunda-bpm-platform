@@ -16,12 +16,27 @@
  */
 package org.camunda.bpm.engine.test.api.repository;
 
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.bpm.engine.test.api.repository.RedeploymentTest.DEPLOYMENT_NAME;
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.exception.NotFoundException;
+import org.camunda.bpm.engine.exception.NotValidException;
 import org.camunda.bpm.engine.exception.NullValueException;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.history.HistoryLevel;
@@ -40,18 +55,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static junit.framework.TestCase.*;
-import static org.camunda.bpm.engine.test.api.repository.RedeploymentTest.DEPLOYMENT_NAME;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -64,9 +67,6 @@ public class DeleteProcessDefinitionTest {
 
   @Rule
   public ProcessEngineTestRule testHelper = new ProcessEngineTestRule(engineRule);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   protected HistoryService historyService;
   protected RepositoryService repositoryService;
@@ -100,20 +100,20 @@ public class DeleteProcessDefinitionTest {
 
   @Test
   public void testDeleteProcessDefinitionNullId() {
-    // declare expected exception
-    thrown.expect(NullValueException.class);
-    thrown.expectMessage("processDefinitionId is null");
 
-    repositoryService.deleteProcessDefinition(null);
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinition(null))
+      .isInstanceOf(NullValueException.class)
+      .hasMessageContaining("processDefinitionId is null");
   }
 
   @Test
   public void testDeleteNonExistingProcessDefinition() {
-    // declare expected exception
-    thrown.expect(NotFoundException.class);
-    thrown.expectMessage("No process definition found with id 'notexist': processDefinition is null");
 
-    repositoryService.deleteProcessDefinition("notexist");
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinition("notexist"))
+      .isInstanceOf(NotFoundException.class)
+      .hasMessageContaining("No process definition found with id 'notexist': processDefinition is null");
   }
 
   @Test
@@ -258,28 +258,27 @@ public class DeleteProcessDefinitionTest {
 
   @Test
   public void testDeleteProcessDefinitionsByNotExistingKey() {
-    // then
-    thrown.expect(NotFoundException.class);
-    thrown.expectMessage("No process definition found");
 
-    // when
-    repositoryService.deleteProcessDefinitions()
-      .byKey("no existing key")
-      .withoutTenantId()
-      .delete();
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinitions()
+        .byKey("no existing key")
+        .withoutTenantId()
+        .delete())
+      .isInstanceOf(NotFoundException.class)
+      .hasMessageContaining("No process definition found");
   }
 
   @Test
   public void testDeleteProcessDefinitionsByKeyIsNull() {
-    // then
-    thrown.expect(NullValueException.class);
-    thrown.expectMessage("cannot be null");
 
-    // when
-    repositoryService.deleteProcessDefinitions()
-      .byKey(null)
-      .withoutTenantId()
-      .delete();
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinitions()
+        .byKey(null)
+        .withoutTenantId()
+        .delete())
+      .isInstanceOf(NullValueException.class)
+      .hasMessageContaining("cannot be null");
+
   }
 
   @Test
@@ -296,7 +295,7 @@ public class DeleteProcessDefinitionTest {
       .delete();
 
     // then
-    assertThat(repositoryService.createProcessDefinitionQuery().count(), is(3L));
+    assertThat(repositoryService.createProcessDefinitionQuery().count()).isEqualTo(3L);
   }
 
   @Test
@@ -307,15 +306,13 @@ public class DeleteProcessDefinitionTest {
     }
     runtimeService.startProcessInstanceByKey("processOne");
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Deletion of process definition");
-
-    // when
-    repositoryService.deleteProcessDefinitions()
-      .byKey("processOne")
-      .withoutTenantId()
-      .delete();
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinitions()
+        .byKey("processOne")
+        .withoutTenantId()
+        .delete())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Deletion of process definition");
   }
 
   @Test
@@ -350,9 +347,9 @@ public class DeleteProcessDefinitionTest {
       .delete();
 
     // then
-    assertThat(historyService.createHistoricVariableInstanceQuery().count(), is(0L));
-    assertThat(historyService.createHistoricProcessInstanceQuery().count(), is(0L));
-    assertThat(repositoryService.createProcessDefinitionQuery().count(), is(0L));
+    assertThat(historyService.createHistoricVariableInstanceQuery().count()).isEqualTo(0L);
+    assertThat(historyService.createHistoricProcessInstanceQuery().count()).isEqualTo(0L);
+    assertThat(repositoryService.createProcessDefinitionQuery().count()).isEqualTo(0L);
   }
 
   @Test
@@ -374,7 +371,7 @@ public class DeleteProcessDefinitionTest {
       .delete();
 
     // then
-    assertThat(IncrementCounterListener.counter, is(0));
+    assertThat(IncrementCounterListener.counter).isEqualTo(0);
   }
 
   @Test
@@ -397,31 +394,29 @@ public class DeleteProcessDefinitionTest {
     List<ProcessDefinition> processDefinitions = repositoryService.createProcessDefinitionQuery().list();
 
     // then
-    assertThat(processDefinitions.size(), is(0));
+    assertThat(processDefinitions.size()).isEqualTo(0);
   }
 
   @Test
   public void testDeleteProcessDefinitionsByNotExistingIds() {
-    // then
-    thrown.expect(NotFoundException.class);
-    thrown.expectMessage("No process definition found");
 
-    // when
-    repositoryService.deleteProcessDefinitions()
-      .byIds("not existing", "also not existing")
-      .delete();
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinitions()
+        .byIds("not existing", "also not existing")
+        .delete())
+      .isInstanceOf(NotFoundException.class)
+      .hasMessageContaining("No process definition found");
   }
 
   @Test
   public void testDeleteProcessDefinitionsByIdIsNull() {
-    // then
-    thrown.expect(NullValueException.class);
-    thrown.expectMessage("cannot be null");
 
-    // when
-    repositoryService.deleteProcessDefinitions()
-      .byIds(null)
-      .delete();
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinitions()
+        .byIds(null)
+        .delete())
+      .isInstanceOf(NullValueException.class)
+      .hasMessageContaining("cannot be null");
   }
 
   @Test
@@ -439,7 +434,7 @@ public class DeleteProcessDefinitionTest {
       .delete();
 
     // then
-    assertThat(repositoryService.createProcessDefinitionQuery().count(), is(3L));
+    assertThat(repositoryService.createProcessDefinitionQuery().count()).isEqualTo(3L);
   }
 
   @Test
@@ -451,14 +446,14 @@ public class DeleteProcessDefinitionTest {
     String[] processDefinitionIds = findProcessDefinitionIdsByKey("processOne");
     runtimeService.startProcessInstanceByKey("processOne");
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Deletion of process definition");
 
-    // when
-    repositoryService.deleteProcessDefinitions()
-      .byIds(processDefinitionIds)
-      .delete();
+    // when/then
+    assertThatThrownBy(() -> repositoryService.deleteProcessDefinitions()
+        .byIds(processDefinitionIds)
+        .delete())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Deletion of process definition");
+
   }
 
   @Test
@@ -492,9 +487,9 @@ public class DeleteProcessDefinitionTest {
       .delete();
 
     // then
-    assertThat(historyService.createHistoricVariableInstanceQuery().count(), is(0L));
-    assertThat(historyService.createHistoricProcessInstanceQuery().count(), is(0L));
-    assertThat(repositoryService.createProcessDefinitionQuery().count(), is(0L));
+    assertThat(historyService.createHistoricVariableInstanceQuery().count()).isEqualTo(0L);
+    assertThat(historyService.createHistoricProcessInstanceQuery().count()).isEqualTo(0L);
+    assertThat(repositoryService.createProcessDefinitionQuery().count()).isEqualTo(0L);
   }
 
   @Test
@@ -515,7 +510,7 @@ public class DeleteProcessDefinitionTest {
       .delete();
 
     // then
-    assertThat(IncrementCounterListener.counter, is(0));
+    assertThat(IncrementCounterListener.counter).isEqualTo(0);
   }
 
   @Test
@@ -539,7 +534,7 @@ public class DeleteProcessDefinitionTest {
     List<ProcessDefinition> processDefinitions = repositoryService.createProcessDefinitionQuery().list();
 
     // then
-    assertThat(processDefinitions.size(), is(0));
+    assertThat(processDefinitions.size()).isEqualTo(0);
   }
 
   private void deployTwoProcessDefinitions() {

@@ -16,8 +16,14 @@
  */
 package org.camunda.bpm.engine.test.standalone.entity;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.DelegateTask;
@@ -28,16 +34,12 @@ import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.camunda.bpm.engine.variable.value.StringValue;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 /**
  *
@@ -47,11 +49,9 @@ import static org.junit.Assert.fail;
 public class ExecutionEntityTest {
 
   @Rule
-  public ProcessEngineRule processEngineRule = new ProcessEngineRule(true);
+  public ProcessEngineRule processEngineRule = new ProvidedProcessEngineRule();
   @Rule
   public ProcessEngineTestRule testRule = new ProcessEngineTestRule(processEngineRule);
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testRestoreProcessInstance() {
@@ -76,10 +76,11 @@ public class ExecutionEntityTest {
     //when parent is deleted from the list
     entities.remove(parent);
 
-    //then exception is thrown because child reference to parent which does not exist anymore
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Cannot resolve parent with id 'parent' of execution 'child', perhaps it was deleted in the meantime");
-    parent.restoreProcessInstance(entities, null, null, null, null, null, null);
+    // when/then
+    // then exception is thrown because child reference to parent which does not exist anymore
+    assertThatThrownBy(() -> parent.restoreProcessInstance(entities, null, null, null, null, null, null))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Cannot resolve parent with id 'parent' of execution 'child', perhaps it was deleted in the meantime");
   }
 
   @Test

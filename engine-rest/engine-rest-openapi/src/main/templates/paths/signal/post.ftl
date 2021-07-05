@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "throwSignal"
       tag = "Signal"
+      summary = "Event"
       desc = "A signal is an event of global scope (broadcast semantics) and is delivered to all
               active handlers. Internally this maps to the engine's signal event received builder
               method `RuntimeService#createSignalEvent()`. For more information about the signal
@@ -48,7 +50,7 @@
 
     <@lib.response
         code = "403"
-        dto = "ExceptionDto"
+        dto = "AuthorizationExceptionDto"
         desc = "Returned if the user is not allowed to throw a signal event.
 
                 See the [Introduction](${docsUrl}/reference/rest/overview/#error-handling) for the
@@ -65,3 +67,4 @@
                 error response format." />
   }
 }
+</#macro>

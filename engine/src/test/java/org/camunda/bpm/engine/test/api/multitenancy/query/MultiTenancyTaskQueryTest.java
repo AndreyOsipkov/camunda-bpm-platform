@@ -16,33 +16,36 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy.query;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.bpm.engine.exception.NullValueException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
  * @author Daniel Meyer
  *
  */
-public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTest {
 
   private static final String TENANT_ONE = "tenant1";
   private static final String TENANT_TWO = "tenant2";
   private static final String TENANT_NON_EXISTING = "nonExistingTenant";
 
-  private final List<String> taskIds = new ArrayList<String>();
+  private final List<String> taskIds = new ArrayList<>();
 
-  @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
 
     createTaskWithoutTenant();
     createTaskForTenant(TENANT_ONE);
@@ -53,7 +56,7 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
   public void testQueryNoTenantIdSet() {
     TaskQuery query = taskService.createTaskQuery();
 
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
   }
 
   @Test
@@ -61,12 +64,12 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
     TaskQuery query = taskService.createTaskQuery()
       .tenantIdIn(TENANT_ONE);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     query = taskService.createTaskQuery()
         .tenantIdIn(TENANT_TWO);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
   @Test
@@ -74,12 +77,12 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
     TaskQuery query = taskService.createTaskQuery()
       .tenantIdIn(TENANT_ONE, TENANT_TWO);
 
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
 
     query = taskService.createTaskQuery()
         .tenantIdIn(TENANT_ONE, TENANT_NON_EXISTING);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
   @Test
@@ -87,7 +90,20 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
     TaskQuery query = taskService.createTaskQuery()
       .withoutTenantId();
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
+  }
+
+  @Test
+  public void testQueryWithAndWithoutTenantId() {
+    // when
+    TaskQuery query = taskService.createTaskQuery()
+        .or()
+          .tenantIdIn(TENANT_ONE, TENANT_TWO)
+          .withoutTenantId()
+        .endOr();
+
+    // then
+    assertThat(query.list().size()).isEqualTo(3);
   }
 
   @Test
@@ -95,7 +111,7 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
     TaskQuery query = taskService.createTaskQuery()
       .tenantIdIn(TENANT_NON_EXISTING);
 
-    assertThat(query.count(), is(0L));
+    assertThat(query.count()).isEqualTo(0L);
   }
 
   @Test
@@ -111,6 +127,7 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
     }
   }
 
+  @Test
   public void testQuerySortingAsc() {
     // exclude tasks without tenant id because of database-specific ordering
     List<Task> tasks = taskService.createTaskQuery()
@@ -119,11 +136,12 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
         .asc()
         .list();
 
-    assertThat(tasks.size(), is(2));
-    assertThat(tasks.get(0).getTenantId(), is(TENANT_ONE));
-    assertThat(tasks.get(1).getTenantId(), is(TENANT_TWO));
+    assertThat(tasks.size()).isEqualTo(2);
+    assertThat(tasks.get(0).getTenantId()).isEqualTo(TENANT_ONE);
+    assertThat(tasks.get(1).getTenantId()).isEqualTo(TENANT_TWO);
   }
 
+  @Test
   public void testQuerySortingDesc() {
     // exclude tasks without tenant id because of database-specific ordering
     List<Task> tasks = taskService.createTaskQuery()
@@ -132,46 +150,50 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
         .desc()
         .list();
 
-    assertThat(tasks.size(), is(2));
-    assertThat(tasks.get(0).getTenantId(), is(TENANT_TWO));
-    assertThat(tasks.get(1).getTenantId(), is(TENANT_ONE));
+    assertThat(tasks).hasSize(2);
+    assertThat(tasks.get(0).getTenantId()).isEqualTo(TENANT_TWO);
+    assertThat(tasks.get(1).getTenantId()).isEqualTo(TENANT_ONE);
   }
 
+  @Test
   public void testQueryNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
     TaskQuery query = taskService.createTaskQuery();
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryAuthenticatedTenant() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
     TaskQuery query = taskService.createTaskQuery();
 
-    assertThat(query.count(), is(2L));
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(0L));
-    assertThat(query.tenantIdIn(TENANT_ONE, TENANT_TWO).count(), is(1L));
+    assertThat(query.count()).isEqualTo(2L);
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(0L);
+    assertThat(query.tenantIdIn(TENANT_ONE, TENANT_TWO).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryAuthenticatedTenants() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE, TENANT_TWO));
 
     TaskQuery query = taskService.createTaskQuery();
 
-    assertThat(query.count(), is(3L));
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(1L));
-    assertThat(query.withoutTenantId().count(), is(1L));
+    assertThat(query.count()).isEqualTo(3L);
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(1L);
+    assertThat(taskService.createTaskQuery().withoutTenantId().count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryDisabledTenantCheck() {
     processEngineConfiguration.setTenantCheckEnabled(false);
     identityService.setAuthentication("user", null, null);
 
     TaskQuery query = taskService.createTaskQuery();
-    assertThat(query.count(), is(3L));
+    assertThat(query.count()).isEqualTo(3L);
   }
 
   protected String createTaskWithoutTenant() {
@@ -191,8 +213,8 @@ public class MultiTenancyTaskQueryTest extends PluggableProcessEngineTestCase {
     return taskId;
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
     identityService.clearAuthentication();
     for (String taskId : taskIds) {
       taskService.deleteTask(taskId, true);

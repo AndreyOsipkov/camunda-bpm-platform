@@ -16,19 +16,19 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy.cmmn;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.CaseExecution;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.junit.Test;
 
-public class MultiTenancyProcessTaskTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyProcessTaskTest extends PluggableProcessEngineTest {
 
   protected static final String TENANT_ONE = "tenant1";
   protected static final String TENANT_TWO = "tenant2";
@@ -50,38 +50,41 @@ public class MultiTenancyProcessTaskTest extends PluggableProcessEngineTestCase 
       .endEvent()
       .done();
 
+  @Test
   public void testStartProcessInstanceWithDeploymentBinding() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_DEPLOYMENT, PROCESS);
-    deploymentForTenant(TENANT_TWO, CMMN_DEPLOYMENT, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, PROCESS, CMMN_DEPLOYMENT);
+    testRule.deployForTenant(TENANT_TWO, PROCESS, CMMN_DEPLOYMENT);
 
     createCaseInstance("testCaseDeployment", TENANT_ONE);
     createCaseInstance("testCaseDeployment", TENANT_TWO);
 
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processDefinitionKey("testProcess");
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(1L));
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testStartProcessInstanceWithLatestBindingSameVersion() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_LATEST_WITH_MANUAL_ACTIVATION, PROCESS);
-    deploymentForTenant(TENANT_TWO, CMMN_LATEST_WITH_MANUAL_ACTIVATION, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, PROCESS, CMMN_LATEST_WITH_MANUAL_ACTIVATION);
+    testRule.deployForTenant(TENANT_TWO, PROCESS, CMMN_LATEST_WITH_MANUAL_ACTIVATION);
 
     createCaseInstance("testCase", TENANT_ONE);
     createCaseInstance("testCase", TENANT_TWO);
 
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processDefinitionKey("testProcess");
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(1L));
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testStartProcessInstanceWithLatestBindingDifferentVersion() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_LATEST_WITH_MANUAL_ACTIVATION, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, PROCESS, CMMN_LATEST_WITH_MANUAL_ACTIVATION);
 
-    deploymentForTenant(TENANT_TWO, CMMN_LATEST_WITH_MANUAL_ACTIVATION, PROCESS);
-    deploymentForTenant(TENANT_TWO, PROCESS);
+    testRule.deployForTenant(TENANT_TWO, PROCESS, CMMN_LATEST_WITH_MANUAL_ACTIVATION);
+    testRule.deployForTenant(TENANT_TWO, PROCESS);
 
     createCaseInstance("testCase", TENANT_ONE);
     createCaseInstance("testCase", TENANT_TWO);
@@ -90,80 +93,86 @@ public class MultiTenancyProcessTaskTest extends PluggableProcessEngineTestCase 
         .tenantIdIn(TENANT_TWO).processDefinitionKey("testProcess").latestVersion().singleResult();
 
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processDefinitionKey("testProcess");
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).processDefinitionId(latestProcessTenantTwo.getId()).count(), is(1L));
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).processDefinitionId(latestProcessTenantTwo.getId()).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testStartProcessInstanceWithVersionBinding() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_VERSION, PROCESS);
-    deploymentForTenant(TENANT_TWO, CMMN_VERSION, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, PROCESS, CMMN_VERSION);
+    testRule.deployForTenant(TENANT_TWO, PROCESS, CMMN_VERSION);
 
     createCaseInstance("testCaseVersion", TENANT_ONE);
     createCaseInstance("testCaseVersion", TENANT_TWO);
 
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processDefinitionKey("testProcess");
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(1L));
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testFailStartProcessInstanceFromOtherTenantWithDeploymentBinding() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_DEPLOYMENT);
-    deploymentForTenant(TENANT_TWO, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, CMMN_DEPLOYMENT);
+    testRule.deployForTenant(TENANT_TWO, PROCESS);
 
     try {
       createCaseInstance("testCaseDeployment", TENANT_ONE);
 
       fail("expected exception");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("no processes deployed with key = 'testProcess'"));
+      assertThat(e.getMessage()).contains("no processes deployed with key = 'testProcess'");
     }
   }
 
+  @Test
   public void testFailStartProcessInstanceFromOtherTenantWithLatestBinding() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_LATEST);
-    deploymentForTenant(TENANT_TWO, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, CMMN_LATEST);
+    testRule.deployForTenant(TENANT_TWO, PROCESS);
 
     try {
       createCaseInstance("testCase", TENANT_ONE);
 
       fail("expected exception");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("no processes deployed with key 'testProcess'"));
+      assertThat(e.getMessage()).contains("no processes deployed with key 'testProcess'");
     }
   }
 
+  @Test
   public void testFailStartProcessInstanceFromOtherTenantWithVersionBinding() {
 
-    deploymentForTenant(TENANT_ONE, CMMN_VERSION_2, PROCESS);
+    testRule.deployForTenant(TENANT_ONE, PROCESS, CMMN_VERSION_2);
 
-    deploymentForTenant(TENANT_TWO, PROCESS);
-    deploymentForTenant(TENANT_TWO, PROCESS);
+    testRule.deployForTenant(TENANT_TWO, PROCESS);
+    testRule.deployForTenant(TENANT_TWO, PROCESS);
 
     try {
       createCaseInstance("testCaseVersion", TENANT_ONE);
 
       fail("expected exception");
     } catch (ProcessEngineException e) {
-      assertThat(e.getMessage(), containsString("no processes deployed with key = 'testProcess'"));
+      assertThat(e.getMessage()).contains("no processes deployed with key = 'testProcess'");
     }
   }
 
+  @Test
   public void testProcessRefTenantIdConstant() {
-    deployment(CMMN_TENANT_CONST);
-    deploymentForTenant(TENANT_ONE, PROCESS);
+   testRule.deploy(CMMN_TENANT_CONST);
+    testRule.deployForTenant(TENANT_ONE, PROCESS);
 
     caseService.withCaseDefinitionByKey("testCase").create();
 
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processDefinitionKey("testProcess");
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testProcessRefTenantIdExpression() {
-    deployment(CMMN_TENANT_EXPR);
-    deploymentForTenant(TENANT_ONE, PROCESS);
+   testRule.deploy(CMMN_TENANT_EXPR);
+    testRule.deployForTenant(TENANT_ONE, PROCESS);
 
     caseService.withCaseDefinitionByKey("testCase").create();
 
@@ -171,7 +180,7 @@ public class MultiTenancyProcessTaskTest extends PluggableProcessEngineTestCase 
     caseService.withCaseExecution(caseExecution.getId()).manualStart();
 
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery().processDefinitionKey("testProcess");
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
   }
 
   protected void createCaseInstance(String caseDefinitionKey, String tenantId) {

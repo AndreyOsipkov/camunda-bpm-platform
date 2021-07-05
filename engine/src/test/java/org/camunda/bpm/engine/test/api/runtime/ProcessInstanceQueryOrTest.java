@@ -16,38 +16,35 @@
  */
 package org.camunda.bpm.engine.test.api.runtime;
 
-import org.camunda.bpm.engine.ManagementService;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.test.Deployment;
-import org.camunda.bpm.engine.test.ProcessEngineRule;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.camunda.bpm.engine.ManagementService;
+import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.RepositoryService;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
+import org.camunda.bpm.engine.test.Deployment;
+import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ProcessInstanceQueryOrTest {
 
   @Rule
-  public ProcessEngineRule processEngineRule = new ProcessEngineRule(true);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+  public ProcessEngineRule processEngineRule = new ProvidedProcessEngineRule();
 
   protected RuntimeService runtimeService;
   protected RepositoryService repositoryService;
@@ -71,102 +68,91 @@ public class ProcessInstanceQueryOrTest {
 
   @Test
   public void shouldThrowExceptionByMissingStartOr() {
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set endOr() before or()");
 
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
         .endOr()
-        .endOr();
+        .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set endOr() before or()");
   }
 
   @Test
   public void shouldThrowExceptionByNesting() {
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set or() within 'or' query");
 
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
         .or()
         .endOr()
         .endOr()
         .or()
-        .endOr();
+        .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set or() within 'or' query");
   }
-  
+
   @Test
   public void shouldThrowExceptionOnOrderByProcessInstanceId() {
-    // given
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set orderByProcessInstanceId() within 'or' query");
-
-    // when
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
-          .orderByProcessInstanceId()
-        .endOr();
+        .orderByProcessInstanceId()
+        .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set orderByProcessInstanceId() within 'or' query");
   }
 
   @Test
   public void shouldThrowExceptionOnOrderByProcessDefinitionId() {
-    // given
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set orderByProcessDefinitionId() within 'or' query");
-
-    // when
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
-          .orderByProcessDefinitionId()
-        .endOr();
+        .orderByProcessDefinitionId()
+      .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set orderByProcessDefinitionId() within 'or' query");
   }
 
   @Test
   public void shouldThrowExceptionOnOrderByProcessDefinitionKey() {
-    // given
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set orderByProcessDefinitionKey() within 'or' query");
-
-    // when
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
           .orderByProcessDefinitionKey()
-        .endOr();
+        .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set orderByProcessDefinitionKey() within 'or' query");
+
   }
 
   @Test
   public void shouldThrowExceptionOnOorderByTenantIdd() {
-    // given
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set orderByTenantId() within 'or' query");
-
-    // when
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
           .orderByTenantId()
-        .endOr();
+        .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set orderByTenantId() within 'or' query");
   }
 
   @Test
   public void shouldThrowExceptionOnOrderByBusinessKey() {
-    // given
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("Invalid query usage: cannot set orderByBusinessKey() within 'or' query");
-
-    // then
-    runtimeService.createProcessInstanceQuery()
+    // when/then
+    assertThatThrownBy(() -> runtimeService.createProcessInstanceQuery()
         .or()
           .orderByBusinessKey()
-        .endOr();
+        .endOr())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("Invalid query usage: cannot set orderByBusinessKey() within 'or' query");
+
   }
 
   @Test

@@ -16,6 +16,15 @@
  */
 package org.camunda.bpm.engine.test.api.history.removaltime;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_REMOVAL_TIME_STRATEGY_END;
+import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_REMOVAL_TIME_STRATEGY_NONE;
+import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_REMOVAL_TIME_STRATEGY_START;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.Is.isA;
+import static org.mockito.Mockito.mock;
+
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.history.HistoryRemovalTimeProvider;
@@ -26,16 +35,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_REMOVAL_TIME_STRATEGY_END;
-import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_REMOVAL_TIME_STRATEGY_NONE;
-import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_REMOVAL_TIME_STRATEGY_START;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.Is.isA;
-import static org.mockito.Mockito.mock;
 
 /**
  * @author Tassilo Weidner
@@ -47,9 +47,6 @@ public class RemovalTimeStrategyConfigurationTest {
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   protected static ProcessEngineConfigurationImpl processEngineConfiguration;
 
@@ -154,15 +151,12 @@ public class RemovalTimeStrategyConfigurationTest {
   @Test
   public void shouldConfigureWithNotExistentStrategy() {
     // given
-
     processEngineConfiguration.setHistoryRemovalTimeStrategy("notExistentStrategy");
 
-    // then
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("history removal time strategy must be set to 'start', 'end' or 'none'");
-
-    // when
-    processEngineConfiguration.initHistoryRemovalTime();
+    // when/then
+    assertThatThrownBy(() -> processEngineConfiguration.initHistoryRemovalTime())
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("history removal time strategy must be set to 'start', 'end' or 'none'");
 
     // assume
     assertThat(processEngineConfiguration.getHistoryRemovalTimeProvider(), isA(HistoryRemovalTimeProvider.class));

@@ -16,69 +16,47 @@
  */
 package org.camunda.bpm.engine.test.standalone.scripting;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-
-import javax.script.ScriptEngine;
-
-import org.camunda.bpm.application.ProcessApplicationInterface;
-import org.camunda.bpm.application.impl.EmbeddedProcessApplication;
-import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.interceptor.Command;
-import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.scripting.ExecutableScript;
-import org.camunda.bpm.engine.impl.scripting.ScriptFactory;
-import org.camunda.bpm.engine.impl.scripting.SourceExecutableScript;
-import org.camunda.bpm.engine.impl.scripting.engine.ScriptingEngines;
 import org.camunda.bpm.engine.impl.scripting.env.ScriptEnvResolver;
-import org.camunda.bpm.engine.impl.scripting.env.ScriptingEnvironment;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.repository.ProcessApplicationDeployment;
+import org.junit.Test;
 
 /**
  * @author Roman Smirnov
  *
  */
-public class EnvScriptCachingTest extends PluggableProcessEngineTestCase {
+public class EnvScriptCachingTest extends AbstractScriptEnvironmentTest {
 
-  protected static final String PROCESS_PATH = "org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml";
   protected static final String SCRIPT_LANGUAGE = "groovy";
   protected static final String SCRIPT = "println 'hello world'";
   protected static final String ENV_SCRIPT = "println 'hello world from env script'";
-  protected static final ScriptEnvResolver RESOLVER;
 
-  static {
-    RESOLVER = new ScriptEnvResolver() {
-      public String[] resolve(String language) {
-        return new String[] { ENV_SCRIPT };
-      }
-    };
+  @Override
+  protected ScriptEnvResolver getResolver() {
+    return language -> new String[] { ENV_SCRIPT };
   }
 
-  protected ScriptFactory scriptFactory;
-
-  public void setUp() throws Exception {
-    super.setUp();
-    scriptFactory = processEngineConfiguration.getScriptFactory();
-    processEngineConfiguration.getEnvScriptResolvers().add(RESOLVER);
+  @Override
+  protected String getScript() {
+    return SCRIPT;
   }
 
-  protected void tearDown() throws Exception {
-    super.tearDown();
-    processEngineConfiguration.getEnvScriptResolvers().remove(RESOLVER);
-  }
-
+  @Test
   public void testEnabledPaEnvScriptCaching() {
     // given
-    EmbeddedProcessApplication processApplication = new EmbeddedProcessApplication();
-
     ProcessApplicationDeployment deployment = repositoryService.createDeployment(processApplication.getReference())
-        .addClasspathResource(PROCESS_PATH)
+        .addClasspathResource(processPath)
         .deploy();
 
     // when
-    executeScript(processApplication);
+    executeScript(processApplication, SCRIPT_LANGUAGE);
 
     // then
     Map<String, List<ExecutableScript>> environmentScripts = processApplication.getEnvironmentScripts();
@@ -93,18 +71,17 @@ public class EnvScriptCachingTest extends PluggableProcessEngineTestCase {
     repositoryService.deleteDeployment(deployment.getId(), true);
   }
 
+  @Test
   public void testDisabledPaEnvScriptCaching() {
     // given
     processEngineConfiguration.setEnableFetchScriptEngineFromProcessApplication(false);
 
-    EmbeddedProcessApplication processApplication = new EmbeddedProcessApplication();
-
     ProcessApplicationDeployment deployment = repositoryService.createDeployment(processApplication.getReference())
-        .addClasspathResource(PROCESS_PATH)
+        .addClasspathResource(processPath)
         .deploy();
 
     // when
-    executeScript(processApplication);
+    executeScript(processApplication, SCRIPT_LANGUAGE);
 
     // then
     Map<String, List<ExecutableScript>> environmentScripts = processApplication.getEnvironmentScripts();
@@ -114,32 +91,6 @@ public class EnvScriptCachingTest extends PluggableProcessEngineTestCase {
     repositoryService.deleteDeployment(deployment.getId(), true);
 
     processEngineConfiguration.setEnableFetchScriptEngineFromProcessApplication(true);
-  }
-
-  protected SourceExecutableScript createScript(String language, String source) {
-    return (SourceExecutableScript) scriptFactory.createScriptFromSource(language, source);
-  }
-
-  protected void executeScript(final ProcessApplicationInterface processApplication) {
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new Command<Void>() {
-        public Void execute(CommandContext commandContext) {
-          return Context.executeWithinProcessApplication(new Callable<Void>() {
-
-            public Void call() throws Exception {
-              ScriptingEngines scriptingEngines = processEngineConfiguration.getScriptingEngines();
-              ScriptEngine scriptEngine = scriptingEngines.getScriptEngineForLanguage(SCRIPT_LANGUAGE);
-
-              SourceExecutableScript script = createScript(SCRIPT_LANGUAGE, SCRIPT);
-
-              ScriptingEnvironment scriptingEnvironment = processEngineConfiguration.getScriptingEnvironment();
-              scriptingEnvironment.execute(script, null, null, scriptEngine);
-
-              return null;
-            }
-          }, processApplication.getReference());
-        }
-      });
   }
 
 }

@@ -45,7 +45,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import junit.framework.AssertionFailedError;
@@ -62,9 +61,6 @@ public class MultiTenancySingleProcessInstanceModificationAsyncTest {
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
-
-  @Rule
-  public ExpectedException thrown= ExpectedException.none();
 
   protected ProcessEngineConfigurationImpl processEngineConfiguration;
   protected RepositoryService repositoryService;
@@ -136,7 +132,7 @@ public class MultiTenancySingleProcessInstanceModificationAsyncTest {
 
     // complete the process
     completeTasksInOrder("task2");
-    assertProcessEnded(processInstanceId);
+    testRule.assertProcessEnded(processInstanceId);
   }
 
   protected String getInstanceIdForActivity(ActivityInstance activityInstance, String activityId) {

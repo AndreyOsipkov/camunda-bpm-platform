@@ -44,6 +44,7 @@
         INCIDENT_STATE_,
         TENANT_ID_,
         JOB_DEF_ID_,
+        ANNOTATION_,
         REMOVAL_TIME_
       ) values (
         #{id ,jdbcType=VARCHAR},
@@ -65,6 +66,7 @@
         #{incidentState, jdbcType=INTEGER},
         #{tenantId, jdbcType=VARCHAR},
         #{jobDefinitionId, jdbcType=VARCHAR},
+        #{annotation, jdbcType=VARCHAR},
         #{removalTime, jdbcType=TIMESTAMP}
       )
   </insert>
@@ -85,7 +87,8 @@
       EXECUTION_ID_ = #{executionId, jdbcType=VARCHAR},
       ACTIVITY_ID_ = #{activityId, jdbcType=VARCHAR},
       FAILED_ACTIVITY_ID_ = #{failedActivityId, jdbcType=VARCHAR},
-      JOB_DEF_ID_ = #{jobDefinitionId, jdbcType=VARCHAR}
+      JOB_DEF_ID_ = #{jobDefinitionId, jdbcType=VARCHAR},
+      ANNOTATION_ = #{annotation, jdbcType=VARCHAR}
     where
       ID_ = #{id, jdbcType=VARCHAR}
   </update>
@@ -110,6 +113,14 @@
     where ROOT_PROC_INST_ID_ = #{rootProcessInstanceId, jdbcType=VARCHAR}
   </update>
 
+  <update id="updateHistoricIncidentsByRootProcessInstanceId_mssql"
+          parameterType="java.util.Map">
+    update RES set
+    RES.REMOVAL_TIME_ = #{removalTime, jdbcType=TIMESTAMP}
+    FROM ${prefix}ACT_HI_INCIDENT RES WITH (FORCESEEK)
+    where RES.ROOT_PROC_INST_ID_ = #{rootProcessInstanceId, jdbcType=VARCHAR}
+  </update>
+
   <update id="updateHistoricIncidentsByRootProcessInstanceId_mysql"
           parameterType="java.util.Map">
     update ${prefix}ACT_HI_INCIDENT set
@@ -126,6 +137,14 @@
       where PROC_INST_ID_ = #{processInstanceId, jdbcType=VARCHAR}
   </update>
 
+  <update id="updateHistoricIncidentsByProcessInstanceId_mssql"
+          parameterType="java.util.Map">
+    update RES set
+    RES.REMOVAL_TIME_ = #{removalTime, jdbcType=TIMESTAMP}
+    FROM ${prefix}ACT_HI_INCIDENT RES WITH (FORCESEEK)
+    where PROC_INST_ID_ = #{processInstanceId, jdbcType=VARCHAR}
+  </update>
+
   <update id="updateHistoricIncidentsByProcessInstanceId_mysql"
           parameterType="java.util.Map">
     update ${prefix}ACT_HI_INCIDENT
@@ -140,6 +159,20 @@
     REMOVAL_TIME_ = #{removalTime, jdbcType=TIMESTAMP}
 
     where ID_ in (SELECT HI.ID_ from ${prefix}ACT_HI_INCIDENT HI
+      inner join ${prefix}ACT_HI_BATCH HB
+      on HI.JOB_DEF_ID_ in
+        (HB.SEED_JOB_DEF_ID_,
+         HB.MONITOR_JOB_DEF_ID_,
+         HB.BATCH_JOB_DEF_ID_)
+      where HB.ID_ = #{batchId})
+  </update>
+
+  <update id="updateHistoricIncidentsByBatchId_mssql"
+          parameterType="java.util.Map">
+    update RES set
+    RES.REMOVAL_TIME_ = #{removalTime, jdbcType=TIMESTAMP}
+    FROM ${prefix}ACT_HI_INCIDENT RES WITH (FORCESEEK)
+    where RES.ID_ in (SELECT HI.ID_ from ${prefix}ACT_HI_INCIDENT HI
       inner join ${prefix}ACT_HI_BATCH HB
       on HI.JOB_DEF_ID_ in
         (HB.SEED_JOB_DEF_ID_,
@@ -264,6 +297,7 @@
     <result property="incidentState" column="INCIDENT_STATE_" jdbcType="INTEGER" />
     <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR" />
     <result property="jobDefinitionId" column="JOB_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="annotation" column="ANNOTATION_" jdbcType="VARCHAR" />
     <result property="removalTime" column="REMOVAL_TIME_" jdbcType="TIMESTAMP"/>
   </resultMap>
 
@@ -293,6 +327,11 @@
     from ${prefix}ACT_HI_INCIDENT RES
 
     <if test="authCheck.shouldPerformAuthorizatioCheck &amp;&amp; !authCheck.revokeAuthorizationCheckEnabled &amp;&amp; authCheck.authUserId != null">
+      <!--
+        HEADS-UP!!!
+        If you change something here, you should probably also change it the EE Webapp
+        See camunda-bpm-platform-ee/webapps/camunda-webapp/plugins/src/main/resources/org/camunda/bpm/cockpit/impl/plugin/history/historicIncident.xml
+      -->
       <include refid="org.camunda.bpm.engine.impl.persistence.entity.AuthorizationEntity.authCheckJoinWithoutOnClause"/>
       AUTH ON (AUTH.RESOURCE_ID_ in (
       <if test="authCheck.isHistoricInstancePermissionsEnabled">
@@ -311,11 +350,26 @@
       <if test="incidentMessage != null">
         and RES.INCIDENT_MSG_ = #{incidentMessage}
       </if>
+      <if test="incidentMessageLike != null">
+        and RES.INCIDENT_MSG_ like #{incidentMessageLike} ESCAPE ${escapeChar}
+      </if>
       <if test="executionId != null">
         and RES.EXECUTION_ID_ = #{executionId}
       </if>
       <if test="activityId != null">
         and RES.ACTIVITY_ID_ = #{activityId}
+      </if>
+      <if test="createTimeAfter != null">
+        and RES.CREATE_TIME_ &gt; #{createTimeAfter}
+      </if>
+      <if test="createTimeBefore != null">
+        and RES.CREATE_TIME_ &lt; #{createTimeBefore}
+      </if>
+      <if test="endTimeAfter != null">
+        and RES.END_TIME_ &gt; #{endTimeAfter}
+      </if>
+      <if test="endTimeBefore != null">
+        and RES.END_TIME_ &lt; #{endTimeBefore}
       </if>
       <if test="failedActivityId != null">
         and RES.FAILED_ACTIVITY_ID_ = #{failedActivityId}
@@ -325,6 +379,9 @@
       </if>
       <if test="processDefinitionId != null">
         and RES.PROC_DEF_ID_ = #{processDefinitionId}
+      </if>
+      <if test="processDefinitionKey != null">
+        and RES.PROC_DEF_KEY_ = #{processDefinitionKey}
       </if>
       <if test="processDefinitionKeys != null &amp;&amp; processDefinitionKeys.length > 0">
         and RES.PROC_DEF_KEY_ in
@@ -366,6 +423,11 @@
       </if>
 
       <if test="authCheck.shouldPerformAuthorizatioCheck &amp;&amp; authCheck.authUserId != null">
+        <!--
+          HEADS-UP!!!
+          If you change something here, you should probably also change it the EE Webapp
+          See camunda-bpm-platform-ee/webapps/camunda-webapp/plugins/src/main/resources/org/camunda/bpm/cockpit/impl/plugin/history/historicIncident.xml
+        -->
         <!-- incident exists in context of a process definition -->
         and (
           (RES.PROC_DEF_ID_ is not null
@@ -397,5 +459,46 @@
       <include refid="org.camunda.bpm.engine.impl.persistence.entity.Commons.applyInForPaginatedCollection"/>
       and HI.JOB_DEF_ID_ is not null
   </sql>
+
+  <select id="selectCompletedHistoricIncidentsPage" resultMap="historicIncidentResultMap" parameterType="java.util.Map" >
+    <bind name="maxResults" value="parameter.maxResults" />
+
+    ${optimizeLimitBeforeWithoutOffset}
+    select ${limitBeforeWithoutOffset} * from ${prefix}ACT_HI_INCIDENT RES
+
+    <where>
+      <if test="parameter.finishedAfter != null">
+        and RES.END_TIME_ &gt; #{parameter.finishedAfter}
+      </if>
+      <if test="parameter.finishedAt != null">
+        and RES.END_TIME_ = #{parameter.finishedAt}
+      </if>
+      <if test="parameter.finishedAfter == null and parameter.finishedAt == null">
+        and RES.END_TIME_ is not null
+      </if>
+    </where>
+
+    ORDER BY RES.END_TIME_ ASC
+    ${optimizeLimitAfterWithoutOffset}
+  </select>
+
+  <select id="selectOpenHistoricIncidentsPage" resultMap="historicIncidentResultMap" parameterType="java.util.Map">
+    <bind name="maxResults" value="parameter.maxResults"/>
+    ${optimizeLimitBeforeWithoutOffset}
+      select ${limitBeforeWithoutOffset} * from ${prefix}ACT_HI_INCIDENT RES
+
+    <where>
+      <if test="parameter.createdAfter != null">
+        and RES.CREATE_TIME_ &gt; #{parameter.createdAfter}
+      </if>
+      <if test="parameter.createdAt != null">
+        and RES.CREATE_TIME_ = #{parameter.createdAt}
+      </if>
+      and RES.END_TIME_ is null
+    </where>
+
+    ORDER BY RES.CREATE_TIME_ ASC
+    ${optimizeLimitAfterWithoutOffset}
+  </select>
 
 </mapper>

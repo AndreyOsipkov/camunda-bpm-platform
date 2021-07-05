@@ -16,6 +16,14 @@
  */
 package org.camunda.bpm.engine.test.jobexecutor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+
 import org.camunda.bpm.engine.impl.Page;
 import org.camunda.bpm.engine.impl.cmd.AcquireJobsCmd;
 import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
@@ -26,15 +34,6 @@ import org.camunda.bpm.engine.impl.persistence.entity.AcquirableJobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobManager;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.List;
-
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class AcquireJobCmdUnitTest {
 
@@ -105,9 +104,9 @@ public class AcquireJobCmdUnitTest {
     AcquiredJobs acquiredJobs = acquireJobsCmd.execute(commandContext);
 
     List<List<String>> jobIdBatches = acquiredJobs.getJobIdBatches();
-    assertThat(jobIdBatches.size(), is(1));
-    assertThat(jobIdBatches.get(0).size(), is(2));
-    assertThat(jobIdBatches.get(0), hasItems(JOB_ID_1, JOB_ID_2));
+    assertThat(jobIdBatches.size()).isEqualTo(1);
+    assertThat(jobIdBatches.get(0).size()).isEqualTo(2);
+    assertThat(jobIdBatches.get(0)).containsExactlyInAnyOrder(JOB_ID_1, JOB_ID_2);
   }
 
   @Test
@@ -140,9 +139,9 @@ public class AcquireJobCmdUnitTest {
     AcquiredJobs acquiredJobs = acquireJobsCmd.execute(commandContext);
 
     List<List<String>> jobIdBatches = acquiredJobs.getJobIdBatches();
-    assertThat(jobIdBatches.size(), is(2));
-    assertThat(jobIdBatches.get(0).size(), is(1));
-    assertThat(jobIdBatches.get(1).size(), is(1));
+    assertThat(jobIdBatches.size()).isEqualTo(2);
+    assertThat(jobIdBatches.get(0).size()).isEqualTo(1);
+    assertThat(jobIdBatches.get(1).size()).isEqualTo(1);
   }
 
 }

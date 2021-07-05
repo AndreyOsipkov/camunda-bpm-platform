@@ -16,6 +16,14 @@
  */
 package org.camunda.bpm.engine.test.api.repository.diagram;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+
 import org.camunda.bpm.engine.impl.bpmn.diagram.ProcessDiagramLayoutFactory;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.interceptor.Command;
@@ -27,15 +35,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 /**
  * @author Nikola Koevski
@@ -87,8 +86,8 @@ public class ProcessDiagramParseTest {
       fail("The test BPMN model file is missing. " + ex.getMessage());
     } catch (Exception e) {
       // then
-      assertThat(e.getMessage(), containsString("Error while parsing BPMN model"));
-      assertThat(e.getCause().getMessage(), containsString("http://apache.org/xml/features/disallow-doctype-decl"));
+      assertThat(e.getMessage()).contains("Error while parsing BPMN model");
+      assertThat(e.getCause().getMessage()).contains("http://apache.org/xml/features/disallow-doctype-decl");
     }
   }
 
@@ -118,8 +117,8 @@ public class ProcessDiagramParseTest {
       fail("The test BPMN model file is missing. " + ex.getMessage());
     } catch (Exception e) {
       // then
-      assertThat(e.getMessage(), containsString("Error while parsing BPMN model"));
-      assertThat(e.getCause().getMessage(), containsString("file.txt"));
+      assertThat(e.getMessage()).contains("Error while parsing BPMN model");
+      assertThat(e.getCause().getMessage()).contains("file.txt");
     }
   }
 }

@@ -16,14 +16,11 @@
  */
 package org.camunda.bpm.engine.test.api.authorization;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
+
 import org.camunda.bpm.engine.authorization.Groups;
-import org.camunda.bpm.engine.test.api.authorization.AuthorizationTest;
-import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -32,17 +29,12 @@ import org.junit.Test;
  */
 public class SchemaLogQueryAuthorizationTest extends AuthorizationTest {
 
-  @After
-  public void tearDown() {
-    super.tearDown();
-  }
-
   @Test
   public void testSimpleQueryWithoutAuthorization() {
     // given
 
     // then
-    assertThat(managementService.createSchemaLogQuery().list().size(), is(0));
+    assertThat(managementService.createSchemaLogQuery().list()).isEmpty();
   }
 
   @Test
@@ -51,7 +43,7 @@ public class SchemaLogQueryAuthorizationTest extends AuthorizationTest {
     identityService.setAuthentication(userId, Collections.singletonList(Groups.CAMUNDA_ADMIN));
 
     // then
-    assertThat(managementService.createSchemaLogQuery().count(), is(greaterThan(0L)));
+    assertThat(managementService.createSchemaLogQuery().count()).isGreaterThan(0);
   }
 
   @Test
@@ -60,6 +52,6 @@ public class SchemaLogQueryAuthorizationTest extends AuthorizationTest {
     identityService.setAuthentication(userId, Collections.singletonList(Groups.CAMUNDA_ADMIN));
 
     // then
-    assertThat(managementService.createSchemaLogQuery().list().size(), is(greaterThan(0)));
+    assertThat(managementService.createSchemaLogQuery().list().size()).isGreaterThan(0);
   }
 }

@@ -1,7 +1,9 @@
+<#macro endpoint_macro docsUrl="">
 {
   <@lib.endpointInfo
       id = "interval"
       tag = "Metrics"
+      summary = "Get Metrics in Interval"
       desc = "Retrieves a list of metrics, aggregated for a given interval." />
 
   "parameters" : [
@@ -23,7 +25,8 @@
                 "history-cleanup-removed-process-instances",
                 "history-cleanup-removed-case-instances",
                 "history-cleanup-removed-decision-instances",
-                "history-cleanup-removed-batch-operations"]
+                "history-cleanup-removed-batch-operations",
+                "history-cleanup-removed-task-metrics"]
         desc = "The name of the metric." />
 
     <@lib.parameter
@@ -93,3 +96,5 @@
         desc = "Returned if some of the query parameters are invalid." />
   }
 }
+
+</#macro>

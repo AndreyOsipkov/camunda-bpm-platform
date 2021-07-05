@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "queryExternalTasks"
       tag = "External Task"
+      summary = "Get List (POST)"
       desc = "Queries for external tasks that fulfill given parameters in the form of a JSON object.
 
               This method is slightly more powerful than the
@@ -50,7 +52,6 @@
                            "activityId": "anActivityId",
                            "activityInstanceId": "anActivityInstanceId",
                            "errorMessage": "anErrorMessage",
-                           "errorDetails": "anErrorDetails",
                            "executionId": "anExecutionId",
                            "id": "anExternalTaskId",
                            "lockExpirationTime": "2015-10-06T16:34:42.000+0200",
@@ -69,7 +70,6 @@
                            "activityId": "anotherActivityId",
                            "activityInstanceId": "anotherActivityInstanceId",
                            "errorMessage": "anotherErrorMessage",
-                           "errorDetails": "anotherErrorDetails",
                            "executionId": "anotherExecutionId",
                            "id": "anotherExternalTaskId",
                            "lockExpirationTime": "2015-10-06T16:34:42.000+0200",
@@ -97,3 +97,5 @@
 
   }
 }
+
+</#macro>

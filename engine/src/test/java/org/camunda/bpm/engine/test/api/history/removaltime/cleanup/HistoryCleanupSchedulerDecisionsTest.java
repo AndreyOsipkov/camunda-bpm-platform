@@ -16,9 +16,14 @@
  */
 package org.camunda.bpm.engine.test.api.history.removaltime.cleanup;
 
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
+import static org.apache.commons.lang3.time.DateUtils.addDays;
+import static org.apache.commons.lang3.time.DateUtils.addSeconds;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.bpm.engine.impl.jobexecutor.historycleanup.HistoryCleanupJobHandlerConfiguration.START_DELAY;
+
+import java.util.Date;
+
 import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.history.event.HistoryEventTypes;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.runtime.Job;
@@ -35,28 +40,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.Date;
-
-import static org.apache.commons.lang3.time.DateUtils.addDays;
-import static org.apache.commons.lang3.time.DateUtils.addSeconds;
-import static org.camunda.bpm.engine.impl.jobexecutor.historycleanup.HistoryCleanupJobHandlerConfiguration.START_DELAY;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
 /**
  * @author Tassilo Weidner
  */
 public class HistoryCleanupSchedulerDecisionsTest extends AbstractHistoryCleanupSchedulerTest {
 
   @ClassRule
-  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule() {
-    public ProcessEngineConfiguration configureEngine(ProcessEngineConfigurationImpl configuration) {
-      return configure(configuration, HistoryEventTypes.DMN_DECISION_EVALUATE);
-    }
-  };
-
-  public ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
-  public ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
+  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule(configuration ->
+      configure(configuration, HistoryEventTypes.DMN_DECISION_EVALUATE));
+  protected ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
+  protected ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
@@ -115,7 +108,7 @@ public class HistoryCleanupSchedulerDecisionsTest extends AbstractHistoryCleanup
     Job job = historyService.findHistoryCleanupJobs().get(0);
 
     // then
-    assertThat(job.getDuedate(), is(removalTime));
+    assertThat(job.getDuedate()).isEqualTo(removalTime);
   }
 
   @Test
@@ -145,7 +138,7 @@ public class HistoryCleanupSchedulerDecisionsTest extends AbstractHistoryCleanup
     Job job = historyService.findHistoryCleanupJobs().get(0);
 
     // then
-    assertThat(job.getDuedate(), is(addSeconds(removalTime, START_DELAY)));
+    assertThat(job.getDuedate()).isEqualTo(addSeconds(removalTime, START_DELAY));
   }
 
   @Test
@@ -175,7 +168,7 @@ public class HistoryCleanupSchedulerDecisionsTest extends AbstractHistoryCleanup
     Job job = historyService.findHistoryCleanupJobs().get(0);
 
     // then
-    assertThat(job.getDuedate(), is(removalTime));
+    assertThat(job.getDuedate()).isEqualTo(removalTime);
   }
 
   @Test
@@ -205,7 +198,7 @@ public class HistoryCleanupSchedulerDecisionsTest extends AbstractHistoryCleanup
     Job job = historyService.findHistoryCleanupJobs().get(0);
 
     // then
-    assertThat(job.getDuedate(), is(addSeconds(removalTime, START_DELAY)));
+    assertThat(job.getDuedate()).isEqualTo(addSeconds(removalTime, START_DELAY));
   }
 
 }

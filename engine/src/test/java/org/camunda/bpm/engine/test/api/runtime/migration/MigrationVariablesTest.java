@@ -16,17 +16,16 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -60,12 +59,8 @@ import org.junit.rules.RuleChain;
 public class MigrationVariablesTest {
 
   @ClassRule
-  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule() {
-    public ProcessEngineConfiguration configureEngine(ProcessEngineConfigurationImpl configuration) {
-      configuration.setJavaSerializationFormatEnabled(true);
-      return configuration;
-    }
-  };
+  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule(configuration ->
+      configuration.setJavaSerializationFormatEnabled(true));
   protected ProcessEngineRule rule = new ProvidedProcessEngineRule(bootstrapRule);
   protected MigrationTestRule testHelper = new MigrationTestRule(rule);
 
@@ -588,8 +583,8 @@ public class MigrationVariablesTest {
       Assert.fail("expected exception");
     }
     catch (ProcessEngineException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("The variable 'foo' exists in both, this scope"
-          + " and concurrent local in the parent scope. Migrating to a non-scope activity would overwrite one of them."));
+      assertThat(e.getMessage()).contains("The variable 'foo' exists in both, this scope"
+          + " and concurrent local in the parent scope. Migrating to a non-scope activity would overwrite one of them.");
     }
   }
 

@@ -1,8 +1,10 @@
+<#macro endpoint_macro docsUrl="">
 {
 
   <@lib.endpointInfo
       id = "getExternalTask"
       tag = "External Task"
+      summary = "Get"
       desc = "Retrieves an external task by id, corresponding to the `ExternalTask` interface in the engine." />
 
   "parameters" : [
@@ -29,7 +31,6 @@
                          "activityId": "anActivityId",
                          "activityInstanceId": "anActivityInstanceId",
                          "errorMessage": "anErrorMessage",
-                         "errorDetails": "anErrorDetails",
                          "executionId": "anExecutionId",
                          "id": "anExternalTaskId",
                          "lockExpirationTime": "2015-10-06T16:34:42.000+0200",
@@ -56,3 +57,5 @@
 
   }
 }
+
+</#macro>

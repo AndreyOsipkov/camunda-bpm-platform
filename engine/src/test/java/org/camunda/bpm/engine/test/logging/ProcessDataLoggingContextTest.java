@@ -16,6 +16,7 @@
  */
 package org.camunda.bpm.engine.test.logging;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -33,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import org.camunda.bpm.container.RuntimeContainerDelegate;
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -41,7 +41,6 @@ import org.camunda.bpm.engine.delegate.DelegateTask;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 import org.camunda.bpm.engine.delegate.TaskListener;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.repository.DeploymentBuilder;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -58,6 +57,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessDataLoggingContextTest {
 
@@ -78,11 +79,8 @@ public class ProcessDataLoggingContextTest {
   private boolean defaultEngineRegistered;
 
   @ClassRule
-  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule() {
-    public ProcessEngineConfiguration configureEngine(ProcessEngineConfigurationImpl configuration) {
-      return configuration.setLoggingContextBusinessKey("businessKey");
-    }
-  };
+  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule(configuration ->
+      configuration.setLoggingContextBusinessKey("businessKey"));
 
   @Rule
   public ProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
@@ -186,6 +184,40 @@ public class ProcessDataLoggingContextTest {
     taskService.complete(taskService.createTaskQuery().singleResult().getId());
     // then activity context logs are present
     assertActivityLogsPresent(instance, Arrays.asList("start", "waitState", "end"), "actId", "appName", "busKey", "defId", "instId", "tenId");
+  }
+
+  @Test
+  @WatchLogger(loggerNames = {NestedLoggingDelegate.LOGGER_NAME}, level = "DEBUG")
+  public void shouldLogCustomMdcPropertiesWithNestedCommand() {
+    // given
+    engineRule.getProcessEngineConfiguration()
+      .setLoggingContextActivityId("actId")
+      .setLoggingContextBusinessKey("busKey")
+      .setLoggingContextProcessDefinitionId("defId")
+      .setLoggingContextProcessInstanceId("instId")
+      .setLoggingContextTenantId("tenId");
+
+    manageDeployment(Bpmn.createExecutableProcess(PROCESS)
+      .startEvent("start")
+      .serviceTask("startProcess")
+        .camundaClass(NestedLoggingDelegate.class.getName())
+      .endEvent("end")
+      .done());
+
+    // when
+    ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(PROCESS, B_KEY);
+
+    // then
+    List<ILoggingEvent> customLogs = loggingRule.getLog();
+    assertThat(customLogs).hasSize(2);
+
+    for (ILoggingEvent logEvent : customLogs) {
+      assertThat(logEvent.getMDCPropertyMap()).containsEntry("actId", "startProcess");
+      assertThat(logEvent.getMDCPropertyMap()).containsEntry("busKey", B_KEY);
+      assertThat(logEvent.getMDCPropertyMap()).containsEntry("defId", processInstance.getProcessDefinitionId());
+      assertThat(logEvent.getMDCPropertyMap()).containsEntry("instId", processInstance.getId());
+      assertThat(logEvent.getMDCPropertyMap()).containsEntry("tenId", processInstance.getTenantId());
+    }
   }
 
   @Test
@@ -816,6 +848,25 @@ public class ProcessDataLoggingContextTest {
       RuntimeService runtimeService = execution.getProcessEngine().getRuntimeService();
       runtimeService.startProcessInstanceByKey(FAILING_PROCESS, (String) null);
     }
+  }
+
+  public static class NestedLoggingDelegate implements JavaDelegate {
+
+    public static final String LOGGER_NAME = "custom-logger";
+    private final static Logger LOGGER = LoggerFactory.getLogger(LOGGER_NAME);
+
+    @Override
+    public void execute(DelegateExecution execution) throws Exception {
+
+      RuntimeService runtimeService = execution.getProcessEngineServices().getRuntimeService();
+
+      LOGGER.info("Before API call");
+      // to reproduce CAM-12272, it is important to make an API call between the logging statements
+      // (regardless if the call is meaningful)
+      runtimeService.createProcessInstanceQuery().list();
+      LOGGER.info("After API call");
+    }
+
   }
 
   public static class FailingDelegate implements JavaDelegate {

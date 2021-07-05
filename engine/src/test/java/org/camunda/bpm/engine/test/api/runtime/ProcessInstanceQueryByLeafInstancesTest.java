@@ -16,14 +16,14 @@
  */
 package org.camunda.bpm.engine.test.api.runtime;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +35,7 @@ import org.junit.Test;
 public class ProcessInstanceQueryByLeafInstancesTest {
 
   @Rule
-  public ProcessEngineRule engineRule = new ProcessEngineRule(true);
+  public ProcessEngineRule engineRule = new ProvidedProcessEngineRule();
 
   protected RuntimeService runtimeService;
 
@@ -49,22 +49,22 @@ public class ProcessInstanceQueryByLeafInstancesTest {
       "org/camunda/bpm/engine/test/api/runtime/nestedSubProcess.bpmn20.xml", "org/camunda/bpm/engine/test/api/runtime/subProcess.bpmn20.xml" })
   public void testQueryByLeafInstancesThreeLayers() {
     /*
-     * nested structure: 
-     * superProcessWithNestedSubProcess 
+     * nested structure:
+     * superProcessWithNestedSubProcess
      * +-- nestedSubProcess
      *     +-- subProcess
      */
     ProcessInstance threeLayerProcess = runtimeService.startProcessInstanceByKey("nestedSubProcessQueryTest");
     ProcessInstanceQuery simpleSubProcessQuery = runtimeService.createProcessInstanceQuery().processDefinitionKey("simpleSubProcess");
 
-    assertThat(runtimeService.createProcessInstanceQuery().count(), is(3L));
-    assertThat(runtimeService.createProcessInstanceQuery().processDefinitionKey("nestedSubProcessQueryTest").count(), is(1L));
-    assertThat(runtimeService.createProcessInstanceQuery().processDefinitionKey("nestedSimpleSubProcess").count(), is(1L));
-    assertThat(simpleSubProcessQuery.count(), is(1L));
+    assertThat(runtimeService.createProcessInstanceQuery().count()).isEqualTo(3L);
+    assertThat(runtimeService.createProcessInstanceQuery().processDefinitionKey("nestedSubProcessQueryTest").count()).isEqualTo(1L);
+    assertThat(runtimeService.createProcessInstanceQuery().processDefinitionKey("nestedSimpleSubProcess").count()).isEqualTo(1L);
+    assertThat(simpleSubProcessQuery.count()).isEqualTo(1L);
 
     ProcessInstance instance = runtimeService.createProcessInstanceQuery().leafProcessInstances().singleResult();
-    assertThat(instance.getRootProcessInstanceId(), is(threeLayerProcess.getId()));
-    assertThat(instance.getId(), is(simpleSubProcessQuery.singleResult().getId()));
+    assertThat(instance.getRootProcessInstanceId()).isEqualTo(threeLayerProcess.getId());
+    assertThat(instance.getId()).isEqualTo(simpleSubProcessQuery.singleResult().getId());
   }
 
   @Test
@@ -72,20 +72,20 @@ public class ProcessInstanceQueryByLeafInstancesTest {
       "org/camunda/bpm/engine/test/api/runtime/subProcess.bpmn20.xml" })
   public void testQueryByLeafInstancesTwoLayers() {
     /*
-     * nested structure: 
-     * nestedSubProcess 
+     * nested structure:
+     * nestedSubProcess
      * +-- subProcess
      */
     ProcessInstance twoLayerProcess = runtimeService.startProcessInstanceByKey("nestedSimpleSubProcess");
     ProcessInstanceQuery simpleSubProcessQuery = runtimeService.createProcessInstanceQuery().processDefinitionKey("simpleSubProcess");
 
-    assertThat(runtimeService.createProcessInstanceQuery().count(), is(2L));
-    assertThat(runtimeService.createProcessInstanceQuery().processDefinitionKey("nestedSimpleSubProcess").count(), is(1L));
-    assertThat(simpleSubProcessQuery.count(), is(1L));
+    assertThat(runtimeService.createProcessInstanceQuery().count()).isEqualTo(2L);
+    assertThat(runtimeService.createProcessInstanceQuery().processDefinitionKey("nestedSimpleSubProcess").count()).isEqualTo(1L);
+    assertThat(simpleSubProcessQuery.count()).isEqualTo(1L);
 
     ProcessInstance instance = runtimeService.createProcessInstanceQuery().leafProcessInstances().singleResult();
-    assertThat(instance.getRootProcessInstanceId(), is(twoLayerProcess.getId()));
-    assertThat(instance.getId(), is(simpleSubProcessQuery.singleResult().getId()));
+    assertThat(instance.getRootProcessInstanceId()).isEqualTo(twoLayerProcess.getId());
+    assertThat(instance.getId()).isEqualTo(simpleSubProcessQuery.singleResult().getId());
   }
 
   @Test
@@ -94,11 +94,11 @@ public class ProcessInstanceQueryByLeafInstancesTest {
     ProcessInstance process = runtimeService.startProcessInstanceByKey("simpleSubProcess");
     ProcessInstanceQuery simpleSubProcessQuery = runtimeService.createProcessInstanceQuery().processDefinitionKey("simpleSubProcess");
 
-    assertThat(runtimeService.createProcessInstanceQuery().count(), is(1L));
-    assertThat(simpleSubProcessQuery.count(), is(1L));
+    assertThat(runtimeService.createProcessInstanceQuery().count()).isEqualTo(1L);
+    assertThat(simpleSubProcessQuery.count()).isEqualTo(1L);
 
     ProcessInstance instance = runtimeService.createProcessInstanceQuery().leafProcessInstances().singleResult();
-    assertThat(instance.getRootProcessInstanceId(), is(process.getId()));
-    assertThat(instance.getId(), is(simpleSubProcessQuery.singleResult().getId()));
+    assertThat(instance.getRootProcessInstanceId()).isEqualTo(process.getId());
+    assertThat(instance.getId()).isEqualTo(simpleSubProcessQuery.singleResult().getId());
   }
 }

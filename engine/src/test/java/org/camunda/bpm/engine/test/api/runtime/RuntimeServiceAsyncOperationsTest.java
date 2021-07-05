@@ -16,6 +16,18 @@
  */
 package org.camunda.bpm.engine.test.api.runtime;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
@@ -32,22 +44,14 @@ import org.camunda.bpm.engine.test.RequiredHistoryLevel;
 import org.camunda.bpm.engine.test.api.AbstractAsyncOperationsTest;
 import org.camunda.bpm.engine.test.api.runtime.migration.MigrationTestRule;
 import org.camunda.bpm.engine.test.api.runtime.migration.models.ProcessModels;
+import org.camunda.bpm.engine.test.api.runtime.util.IncrementCounterListener;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-
-import org.camunda.bpm.engine.test.api.runtime.util.IncrementCounterListener;
-
-import java.util.*;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
-import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
 
 
 /**
@@ -59,9 +63,6 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
   protected ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
 
   protected MigrationTestRule migrationRule = new MigrationTestRule(engineRule);
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
@@ -156,7 +157,7 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
     // then
     assertEquals(0, exceptions.size());
 
-    assertThat(managementService.createJobQuery().withException().list().size(), is(0));
+    assertThat(managementService.createJobQuery().withException().list().size()).isEqualTo(0);
 
     processIds.remove("aFake");
     assertHistoricTaskDeletionPresent(processIds, TESTING_INSTANCE_DELETE, testRule);
@@ -168,10 +169,11 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
       "org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml"})
   @Test
   public void testDeleteProcessInstancesAsyncWithNullList() throws Exception {
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("processInstanceIds is empty");
 
-    runtimeService.deleteProcessInstancesAsync(null, null, TESTING_INSTANCE_DELETE);
+    // when/then
+    assertThatThrownBy(() -> runtimeService.deleteProcessInstancesAsync(null, null, TESTING_INSTANCE_DELETE))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("processInstanceIds is empty");
 
   }
 
@@ -179,10 +181,11 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
       "org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml"})
   @Test
   public void testDeleteProcessInstancesAsyncWithEmptyList() throws Exception {
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("processInstanceIds is empty");
 
-    runtimeService.deleteProcessInstancesAsync(new ArrayList<String>(), null, TESTING_INSTANCE_DELETE);
+    // when/then
+    assertThatThrownBy(() -> runtimeService.deleteProcessInstancesAsync(new ArrayList<String>(), null, TESTING_INSTANCE_DELETE))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("processInstanceIds is empty");
 
   }
 
@@ -304,10 +307,11 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
       "org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml"})
   @Test
   public void testDeleteProcessInstancesAsyncWithNullQueryParameter() throws Exception {
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("processInstanceIds is empty");
 
-    runtimeService.deleteProcessInstancesAsync(null, null, TESTING_INSTANCE_DELETE);
+    // when/then
+    assertThatThrownBy(() -> runtimeService.deleteProcessInstancesAsync(null, null, TESTING_INSTANCE_DELETE))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("processInstanceIds is empty");
   }
 
   @Deployment(resources = {
@@ -319,15 +323,15 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
     ProcessInstanceQuery query = runtimeService.createProcessInstanceQuery()
         .processInstanceBusinessKey("invalid");
 
-    thrown.expect(ProcessEngineException.class);
-    thrown.expectMessage("processInstanceIds is empty");
+    // when/then
+    assertThatThrownBy(() -> runtimeService.deleteProcessInstancesAsync(null, query, TESTING_INSTANCE_DELETE))
+      .isInstanceOf(ProcessEngineException.class)
+      .hasMessageContaining("processInstanceIds is empty");
 
-    // when
-    runtimeService.deleteProcessInstancesAsync(null, query, TESTING_INSTANCE_DELETE);
   }
 
   protected void assertProcessInstancesAreDeleted() {
-    assertThat(runtimeService.createProcessInstanceQuery().list().size(), is(0));
+    assertThat(runtimeService.createProcessInstanceQuery().list().size()).isEqualTo(0);
   }
 
   @Test
@@ -352,7 +356,7 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
     executeBatchJobs(batch);
 
     // then
-    assertThat(IncrementCounterListener.counter, is(0));
+    assertThat(IncrementCounterListener.counter).isEqualTo(0);
   }
 
   @Test
@@ -444,7 +448,7 @@ public class RuntimeServiceAsyncOperationsTest extends AbstractAsyncOperationsTe
     executeBatchJobs(batch);
 
     // then
-    assertThat(IncrementCounterListener.counter, is(1));
+    assertThat(IncrementCounterListener.counter).isEqualTo(1);
   }
 
   @Test

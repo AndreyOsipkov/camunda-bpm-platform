@@ -18,6 +18,7 @@ package org.camunda.bpm.engine.rest;
 
 import static io.restassured.RestAssured.given;
 import static io.restassured.path.json.JsonPath.from;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.engine.rest.helper.MockProvider.EXAMPLE_CASE_DEFINITION_ID;
 import static org.camunda.bpm.engine.rest.helper.MockProvider.EXAMPLE_CASE_EXECUTION_ID;
 import static org.camunda.bpm.engine.rest.helper.MockProvider.EXAMPLE_CASE_INSTANCE_ID;
@@ -46,12 +47,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -250,6 +248,7 @@ public class TaskRestServiceInteractionTest extends
     when(processEngine.getFormService()).thenReturn(formServiceMock);
     TaskFormData mockFormData = MockProvider.createMockTaskFormData();
     when(formServiceMock.getTaskFormData(anyString())).thenReturn(mockFormData);
+    when(formServiceMock.getTaskFormKey(anyString(), anyString())).thenReturn(MockProvider.EXAMPLE_FORM_KEY);
 
     VariableMap variablesMock = MockProvider.createMockFormVariables();
     when(formServiceMock.getTaskFormVariables(eq(EXAMPLE_TASK_ID), Matchers.<Collection<String>>any(), anyBoolean())).thenReturn(variablesMock);
@@ -808,9 +807,9 @@ public class TaskRestServiceInteractionTest extends
     verify(formServiceMock).submitTaskForm(eq(EXAMPLE_TASK_ID), captor.capture());
     VariableMap map = captor.getValue();
     FileValue fileValue = (FileValue) map.getValueTyped(variableKey);
-    assertThat(fileValue, is(notNullValue()));
-    assertThat(fileValue.getFilename(), is(filename));
-    assertThat(IoUtil.readInputStream(fileValue.getValue(), null), is("someBytes".getBytes()));
+    assertThat(fileValue).isNotNull();
+    assertThat(fileValue.getFilename()).isEqualTo(filename);
+    assertThat(IoUtil.readInputStream(fileValue.getValue(), null)).isEqualTo("someBytes".getBytes());
   }
 
   @Test
@@ -2060,6 +2059,7 @@ public class TaskRestServiceInteractionTest extends
       .body("userId", equalTo(EXAMPLE_USER_ID))
       .body("time", equalTo(EXAMPLE_TASK_COMMENT_TIME))
       .body("message", equalTo(EXAMPLE_TASK_COMMENT_FULL_MESSAGE))
+      .body("processInstanceId", equalTo(MockProvider.EXAMPLE_PROCESS_INSTANCE_ID))
       .body("removalTime", equalTo(EXAMPLE_TASK_COMMENT_TIME))
       .body("rootProcessInstanceId", equalTo(EXAMPLE_TASK_COMMENT_ROOT_PROCESS_INSTANCE_ID))
     .when()
@@ -2244,6 +2244,32 @@ public class TaskRestServiceInteractionTest extends
       .post(SINGLE_TASK_ADD_COMMENT_URL);
 
     verify(taskServiceMock).createComment(EXAMPLE_TASK_ID, null, EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
+
+    verifyCreatedTaskComment(mockTaskComment, response);
+  }
+
+  @Test
+  public void shouldAssignProcessInstanceIdToComment() {
+    when(taskServiceMock.createComment(EXAMPLE_TASK_ID, EXAMPLE_PROCESS_INSTANCE_ID,
+        EXAMPLE_TASK_COMMENT_FULL_MESSAGE)).thenReturn(mockTaskComment);
+
+    Map<String, Object> json = new HashMap<>();
+    json.put("message", EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
+    json.put("processInstanceId", EXAMPLE_PROCESS_INSTANCE_ID);
+
+    Response response = given()
+        .pathParam("id", EXAMPLE_TASK_ID)
+        .header("accept", MediaType.APPLICATION_JSON)
+        .contentType(ContentType.JSON)
+        .body(json)
+        .then().expect()
+        .statusCode(Status.OK.getStatusCode())
+        .contentType(ContentType.JSON)
+        .when()
+        .post(SINGLE_TASK_ADD_COMMENT_URL);
+
+    verify(taskServiceMock).createComment(EXAMPLE_TASK_ID, EXAMPLE_PROCESS_INSTANCE_ID,
+        EXAMPLE_TASK_COMMENT_FULL_MESSAGE);
 
     verifyCreatedTaskComment(mockTaskComment, response);
   }
@@ -3249,6 +3275,25 @@ public class TaskRestServiceInteractionTest extends
     .then().expect()
       .statusCode(Status.OK.getStatusCode())
       .body(equalTo("Test"))
+      .contentType(MediaType.APPLICATION_XHTML_XML)
+    .when()
+      .get(DEPLOYED_TASK_FORM_URL);
+
+    verify(formServiceMock).getDeployedTaskForm(MockProvider.EXAMPLE_TASK_ID);
+  }
+
+  @Test
+  public void testGetDeployedTaskFormJson() {
+    InputStream deployedFormMock = new ByteArrayInputStream("Test".getBytes());
+    when(formServiceMock.getDeployedTaskForm(anyString())).thenReturn(deployedFormMock);
+    when(mockTask.getFormKey()).thenReturn("test.form");
+
+    given()
+      .pathParam("id", MockProvider.EXAMPLE_TASK_ID)
+    .then().expect()
+      .statusCode(Status.OK.getStatusCode())
+      .body(equalTo("Test"))
+      .contentType(MediaType.APPLICATION_JSON)
     .when()
       .get(DEPLOYED_TASK_FORM_URL);
 
@@ -3301,8 +3346,23 @@ public class TaskRestServiceInteractionTest extends
   }
 
   @Test
+  public void testGetDeployedTaskFormWithUnexistingTask() {
+    InputStream deployedFormMock = new ByteArrayInputStream("Test".getBytes());
+    when(formServiceMock.getDeployedTaskForm(anyString())).thenReturn(deployedFormMock);
+    when(mockQuery.singleResult()).thenReturn(null);
+
+    given()
+      .pathParam("id", MockProvider.EXAMPLE_TASK_ID)
+    .then().expect()
+      .statusCode(Status.BAD_REQUEST.getStatusCode())
+      .body("message", containsString("No task found for taskId"))
+    .when()
+      .get(DEPLOYED_TASK_FORM_URL);
+  }
+
+  @Test
   public void testHandleBpmnError() {
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "anErrorCode");
     parameters.put("errorMessage", "anErrorMessage");
 
@@ -3322,7 +3382,7 @@ public class TaskRestServiceInteractionTest extends
 
   @Test
   public void testHandleBpmnErrorWithVariables() {
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "anErrorCode");
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -3360,11 +3420,11 @@ public class TaskRestServiceInteractionTest extends
 
   @Test
   public void testHandleBpmnErrorNonExistingTask() {
-    doThrow(new NullValueException())
+    doThrow(new NotFoundException())
       .when(taskServiceMock)
       .handleBpmnError(anyString(), anyString(), anyString(), anyMapOf(String.class, Object.class));
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "anErrorCode");
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
@@ -3374,7 +3434,26 @@ public class TaskRestServiceInteractionTest extends
       .expect()
       .statusCode(Status.NOT_FOUND.getStatusCode())
       .body("type", equalTo(RestException.class.getSimpleName()))
-      .body("message", equalTo("Task with id aTaskId does not exist"))
+    .when()
+      .post(HANDLE_BPMN_ERROR_URL);
+  }
+
+  @Test
+  public void testHandleBpmnErrorNoErrorCode() {
+    doThrow(new BadUserRequestException())
+        .when(taskServiceMock)
+        .handleBpmnError(anyString(), anyString(), anyString(), anyMapOf(String.class, Object.class));
+
+    Map<String, Object> parameters = new HashMap<>();
+    parameters.put("errorCode", "");
+    given()
+      .contentType(POST_JSON_CONTENT_TYPE)
+      .body(parameters)
+      .pathParam("id", "aTaskId")
+    .then()
+      .expect()
+      .statusCode(Status.BAD_REQUEST.getStatusCode())
+      .body("type", equalTo(RestException.class.getSimpleName()))
     .when()
       .post(HANDLE_BPMN_ERROR_URL);
   }
@@ -3385,7 +3464,7 @@ public class TaskRestServiceInteractionTest extends
       .when(taskServiceMock)
       .handleBpmnError(any(String.class), any(String.class), any(String.class), anyMapOf(String.class, Object.class));
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "errorCode");
 
     given()
@@ -3407,7 +3486,7 @@ public class TaskRestServiceInteractionTest extends
       .when(taskServiceMock)
       .handleBpmnError(any(String.class), any(String.class), any(String.class), anyMapOf(String.class, Object.class));
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("errorCode", "errorCode");
 
     given()
@@ -3426,7 +3505,7 @@ public class TaskRestServiceInteractionTest extends
 
   @Test
   public void testHandleBpmnEscalation() {
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "anEscalationCode");
 
     given()
@@ -3445,7 +3524,7 @@ public class TaskRestServiceInteractionTest extends
 
   @Test
   public void testHandleBpmnEscalationWithVariables() {
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "anEscalationCode");
     Map<String, Object> variables = VariablesBuilder
         .create()
@@ -3482,11 +3561,11 @@ public class TaskRestServiceInteractionTest extends
 
   @Test
   public void testHandleBpmnEscalationNonExistingTask() {
-    doThrow(new NullValueException())
+    doThrow(new NotFoundException("Task with id aTaskId does not exist"))
       .when(taskServiceMock)
       .handleEscalation(anyString(), anyString(), anyMapOf(String.class, Object.class));
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "anEscalationCode");
     given()
       .contentType(POST_JSON_CONTENT_TYPE)
@@ -3507,7 +3586,7 @@ public class TaskRestServiceInteractionTest extends
       .when(taskServiceMock)
       .handleEscalation(any(String.class), any(String.class),anyMapOf(String.class, Object.class));
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "escalationCode");
 
     given()
@@ -3529,7 +3608,7 @@ public class TaskRestServiceInteractionTest extends
       .when(taskServiceMock)
       .handleEscalation(any(String.class), any(String.class), anyMapOf(String.class, Object.class));
 
-    Map<String, Object> parameters = new HashMap<String, Object>();
+    Map<String, Object> parameters = new HashMap<>();
     parameters.put("escalationCode", "escalationCode");
 
     given()
@@ -3542,6 +3621,27 @@ public class TaskRestServiceInteractionTest extends
       .body("type", equalTo(RestException.class.getSimpleName()))
       .body("message", equalTo("aMessage"))
     .when()
+      .post(HANDLE_BPMN_ESCALATION_URL);
+  }
+
+  @Test
+  public void testHandleBpmnEscalationMissingEscalationCode() {
+    doThrow(new BadUserRequestException("aMessage"))
+      .when(taskServiceMock)
+      .handleEscalation(any(String.class), any(String.class), anyMapOf(String.class, Object.class));
+
+    Map<String, Object> parameters = new HashMap<>();
+
+    given()
+      .contentType(POST_JSON_CONTENT_TYPE)
+      .body(parameters)
+      .pathParam("id", "aTaskId")
+      .then()
+      .expect()
+      .statusCode(Status.BAD_REQUEST.getStatusCode())
+      .body("type", equalTo(RestException.class.getSimpleName()))
+      .body("message", equalTo("aMessage"))
+      .when()
       .post(HANDLE_BPMN_ESCALATION_URL);
   }
 
@@ -3578,11 +3678,13 @@ public class TaskRestServiceInteractionTest extends
     String returnedId = path.get("id");
     String returnedUserId = path.get("userId");
     String returnedTaskId = path.get("taskId");
+    String returnedProcessInstanceId = path.get("processInstanceId");
     Date returnedTime = DateTimeUtil.parseDate(path.<String>get("time"));
     String returnedFullMessage = path.get("message");
 
     assertEquals(mockTaskComment.getId(), returnedId);
     assertEquals(mockTaskComment.getTaskId(), returnedTaskId);
+    assertEquals(mockTaskComment.getProcessInstanceId(), returnedProcessInstanceId);
     assertEquals(mockTaskComment.getUserId(), returnedUserId);
     assertEquals(mockTaskComment.getTime(), returnedTime);
     assertEquals(mockTaskComment.getFullMessage(), returnedFullMessage);

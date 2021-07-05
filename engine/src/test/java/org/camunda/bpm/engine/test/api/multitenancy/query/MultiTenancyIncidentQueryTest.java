@@ -16,20 +16,22 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy.query;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.bpm.engine.exception.NullValueException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.Incident;
 import org.camunda.bpm.engine.runtime.IncidentQuery;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.junit.Before;
+import org.junit.Test;
 
-public class MultiTenancyIncidentQueryTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyIncidentQueryTest extends PluggableProcessEngineTest {
 
   protected static final BpmnModelInstance BPMN = Bpmn.createExecutableProcess("failingProcess")
       .startEvent()
@@ -42,52 +44,57 @@ public class MultiTenancyIncidentQueryTest extends PluggableProcessEngineTestCas
   protected static final String TENANT_ONE = "tenant1";
   protected static final String TENANT_TWO = "tenant2";
 
-  @Override
-  protected void setUp() {
-    deploymentForTenant(TENANT_ONE, BPMN);
-    deploymentForTenant(TENANT_TWO, BPMN);
+  @Before
+  public void setUp() {
+    testRule.deployForTenant(TENANT_ONE, BPMN);
+    testRule.deployForTenant(TENANT_TWO, BPMN);
 
     startProcessInstanceAndExecuteFailingJobForTenant(TENANT_ONE);
     startProcessInstanceAndExecuteFailingJobForTenant(TENANT_TWO);
   }
 
+  @Test
   public void testQueryWithoutTenantId() {
     IncidentQuery query = runtimeService
         .createIncidentQuery();
 
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
   }
 
+  @Test
   public void testQueryByTenantId() {
     IncidentQuery query = runtimeService
         .createIncidentQuery()
         .tenantIdIn(TENANT_ONE);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
 
     query = runtimeService
         .createIncidentQuery()
         .tenantIdIn(TENANT_TWO);
 
-    assertThat(query.count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryByTenantIds() {
     IncidentQuery query = runtimeService
         .createIncidentQuery()
         .tenantIdIn(TENANT_ONE, TENANT_TWO);
 
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
   }
 
+  @Test
   public void testQueryByNonExistingTenantId() {
     IncidentQuery query = runtimeService
         .createIncidentQuery()
         .tenantIdIn("nonExisting");
 
-    assertThat(query.count(), is(0L));
+    assertThat(query.count()).isEqualTo(0L);
   }
 
+  @Test
   public void testFailQueryByTenantIdNull() {
     try {
       runtimeService.createIncidentQuery()
@@ -98,68 +105,74 @@ public class MultiTenancyIncidentQueryTest extends PluggableProcessEngineTestCas
     }
   }
 
+  @Test
   public void testQuerySortingAsc() {
     List<Incident> incidents = runtimeService.createIncidentQuery()
         .orderByTenantId()
         .asc()
         .list();
 
-    assertThat(incidents.size(), is(2));
-    assertThat(incidents.get(0).getTenantId(), is(TENANT_ONE));
-    assertThat(incidents.get(1).getTenantId(), is(TENANT_TWO));
+    assertThat(incidents).hasSize(2);
+    assertThat(incidents.get(0).getTenantId()).isEqualTo(TENANT_ONE);
+    assertThat(incidents.get(1).getTenantId()).isEqualTo(TENANT_TWO);
   }
 
+  @Test
   public void testQuerySortingDesc() {
     List<Incident> incidents = runtimeService.createIncidentQuery()
         .orderByTenantId()
         .desc()
         .list();
 
-    assertThat(incidents.size(), is(2));
-    assertThat(incidents.get(0).getTenantId(), is(TENANT_TWO));
-    assertThat(incidents.get(1).getTenantId(), is(TENANT_ONE));
+    assertThat(incidents).hasSize(2);
+    assertThat(incidents.get(0).getTenantId()).isEqualTo(TENANT_TWO);
+    assertThat(incidents.get(1).getTenantId()).isEqualTo(TENANT_ONE);
   }
 
+  @Test
   public void testQueryNoAuthenticatedTenants() {
     identityService.setAuthentication("user", null, null);
 
     IncidentQuery query = runtimeService.createIncidentQuery();
-    assertThat(query.count(), is(0L));
+    assertThat(query.count()).isEqualTo(0L);
   }
 
+  @Test
   public void testQueryAuthenticatedTenant() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
     IncidentQuery query = runtimeService.createIncidentQuery();
 
-    assertThat(query.count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(0L));
-    assertThat(query.tenantIdIn(TENANT_ONE, TENANT_TWO).count(), is(1L));
+    assertThat(query.count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(0L);
+    assertThat(query.tenantIdIn(TENANT_ONE, TENANT_TWO).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryAuthenticatedTenants() {
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE, TENANT_TWO));
 
     IncidentQuery query = runtimeService.createIncidentQuery();
 
-    assertThat(query.count(), is(2L));
-    assertThat(query.tenantIdIn(TENANT_ONE).count(), is(1L));
-    assertThat(query.tenantIdIn(TENANT_TWO).count(), is(1L));
+    assertThat(query.count()).isEqualTo(2L);
+    assertThat(query.tenantIdIn(TENANT_ONE).count()).isEqualTo(1L);
+    assertThat(query.tenantIdIn(TENANT_TWO).count()).isEqualTo(1L);
   }
 
+  @Test
   public void testQueryDisabledTenantCheck() {
     processEngineConfiguration.setTenantCheckEnabled(false);
     identityService.setAuthentication("user", null, null);
 
     IncidentQuery query = runtimeService.createIncidentQuery();
-    assertThat(query.count(), is(2L));
+    assertThat(query.count()).isEqualTo(2L);
   }
 
   protected void startProcessInstanceAndExecuteFailingJobForTenant(String tenant) {
     runtimeService.createProcessInstanceByKey("failingProcess").processDefinitionTenantId(tenant).execute();
 
-    executeAvailableJobs();
+    testRule.executeAvailableJobs();
   }
 
 }

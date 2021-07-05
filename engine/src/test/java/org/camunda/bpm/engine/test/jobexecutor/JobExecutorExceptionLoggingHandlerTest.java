@@ -16,8 +16,8 @@
  */
 package org.camunda.bpm.engine.test.jobexecutor;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.jobexecutor.ExecuteJobHelper;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.After;
@@ -35,8 +36,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class JobExecutorExceptionLoggingHandlerTest {
-  
-  public ProcessEngineRule engineRule = new ProcessEngineRule();
+
+  public ProcessEngineRule engineRule = new ProvidedProcessEngineRule();
   public ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
 
   @Rule
@@ -44,7 +45,7 @@ public class JobExecutorExceptionLoggingHandlerTest {
 
   protected ProcessEngineConfigurationImpl processEngineConfiguration;
   protected ExecuteJobHelper.ExceptionLoggingHandler originalHandler;
-  
+
   @Before
   public void init() {
     processEngineConfiguration = engineRule.getProcessEngineConfiguration();
@@ -81,7 +82,7 @@ public class JobExecutorExceptionLoggingHandlerTest {
 
     // then
     assertTrue(collectedException instanceof RuntimeException);
-    assertThat(collectedException.getMessage(), is("Expected Exception"));
+    assertThat(collectedException.getMessage()).isEqualTo("Expected Exception");
   }
 
   static class CollectingHandler implements ExecuteJobHelper.ExceptionLoggingHandler {

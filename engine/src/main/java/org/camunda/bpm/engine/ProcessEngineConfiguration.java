@@ -31,6 +31,7 @@ import org.camunda.bpm.engine.impl.cfg.BeansConfigurationHelper;
 import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
+import org.camunda.bpm.engine.impl.telemetry.TelemetryRegistry;
 import org.camunda.bpm.engine.runtime.DeserializationTypeValidator;
 import org.camunda.bpm.engine.variable.type.ValueTypeResolver;
 
@@ -230,6 +231,8 @@ public abstract class ProcessEngineConfiguration {
   protected String mailServerDefaultFrom = "camunda@localhost";
 
   protected String databaseType;
+  protected String databaseVendor;
+  protected String databaseVersion;
   protected String databaseSchemaUpdate = DB_SCHEMA_UPDATE_FALSE;
   protected String jdbcDriver = "org.h2.Driver";
   protected String jdbcUrl = "jdbc:h2:tcp://localhost/activiti";
@@ -411,6 +414,17 @@ public abstract class ProcessEngineConfiguration {
   /** Indicates whether type validation should be done before deserialization */
   protected boolean deserializationTypeValidationEnabled = false;
 
+  /** An unique installation identifier */
+  protected String installationId;
+
+  protected TelemetryRegistry telemetryRegistry;
+
+  /**
+   * On failing activities we can skip output mapping. This might be helpful if output mapping uses variables that might not
+   * be available on failure (e.g. with external tasks or RPA tasks).
+   */
+  protected boolean skipOutputMappingOnCanceledActivities = false;
+
   /** use one of the static createXxxx methods instead */
   protected ProcessEngineConfiguration() {
   }
@@ -546,6 +560,24 @@ public abstract class ProcessEngineConfiguration {
 
   public ProcessEngineConfiguration setDatabaseType(String databaseType) {
     this.databaseType = databaseType;
+    return this;
+  }
+
+  public String getDatabaseVendor() {
+    return databaseVendor;
+  }
+
+  public ProcessEngineConfiguration setDatabaseVendor(String databaseVendor) {
+    this.databaseVendor = databaseVendor;
+    return this;
+  }
+
+  public String getDatabaseVersion() {
+    return databaseVersion;
+  }
+
+  public ProcessEngineConfiguration setDatabaseVersion(String databaseVersion) {
+    this.databaseVersion = databaseVersion;
     return this;
   }
 
@@ -1055,4 +1087,29 @@ public abstract class ProcessEngineConfiguration {
     return this;
   }
 
+  public String getInstallationId() {
+    return installationId;
+  }
+
+  public ProcessEngineConfiguration setInstallationId(String installationId) {
+    this.installationId = installationId;
+    return this;
+  }
+
+  public TelemetryRegistry getTelemetryRegistry() {
+    return telemetryRegistry;
+  }
+
+  public ProcessEngineConfiguration setTelemetryRegistry(TelemetryRegistry telemetryRegistry) {
+    this.telemetryRegistry = telemetryRegistry;
+    return this;
+  }
+
+  public boolean isSkipOutputMappingOnCanceledActivities() {
+    return skipOutputMappingOnCanceledActivities;
+  }
+
+  public void setSkipOutputMappingOnCanceledActivities(boolean skipOutputMappingOnCanceledActivities) {
+    this.skipOutputMappingOnCanceledActivities = skipOutputMappingOnCanceledActivities;
+  }
 }

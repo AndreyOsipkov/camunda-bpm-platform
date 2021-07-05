@@ -17,10 +17,11 @@
 package org.camunda.bpm.engine.test.history;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -44,11 +45,9 @@ import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 /**
@@ -74,9 +73,6 @@ public class HistoricIncidentQueryTest {
   @Rule
   public RuleChain chain = RuleChain.outerRule(engineRule).around(testHelper);
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
-
   protected RuntimeService runtimeService;
   protected ManagementService managementService;
   protected HistoryService historyService;
@@ -86,6 +82,42 @@ public class HistoricIncidentQueryTest {
     runtimeService = engineRule.getRuntimeService();
     managementService = engineRule.getManagementService();
     historyService = engineRule.getHistoryService();
+  }
+
+  @Test
+  @Deployment(resources={"org/camunda/bpm/engine/test/api/runtime/oneFailingServiceProcess.bpmn20.xml"})
+  public void testHistoricIncidentQueryCreateEndAfterBefore() {
+
+    // given
+    // 1 failed instance of "oneFailingServiceTaskProcess"
+    startProcessInstance(PROCESS_DEFINITION_KEY);
+    HistoricIncidentQuery query = historyService.createHistoricIncidentQuery();
+
+    // one incident of each of the following processes
+    testHelper.deploy(Bpmn.createExecutableProcess("proc1").startEvent().userTask().endEvent().done());
+    ProcessInstance instance2 = runtimeService.startProcessInstanceByKey("proc1");
+    Incident incident2 = runtimeService.createIncident("foo", instance2.getId(), "a");
+    // resolve incident2
+    runtimeService.resolveIncident(incident2.getId());
+
+    Calendar hourAgo = Calendar.getInstance();
+    hourAgo.add(Calendar.HOUR_OF_DAY, -1);
+    Calendar hourFromNow = Calendar.getInstance();
+    hourFromNow.add(Calendar.HOUR_OF_DAY, 1);
+
+    // createTime
+    assertEquals(0, query.createTimeBefore(hourAgo.getTime()).count());
+    assertEquals(2, query.createTimeBefore(hourFromNow.getTime()).count());
+    assertEquals(2, query.createTimeAfter(hourAgo.getTime()).count());
+    assertEquals(0, query.createTimeAfter(hourFromNow.getTime()).count());
+    assertEquals(2, query.createTimeBefore(hourFromNow.getTime()).createTimeAfter(hourAgo.getTime()).count());
+
+    //endTime
+    assertEquals(0, query.endTimeBefore(hourAgo.getTime()).count());
+    assertEquals(1, query.endTimeBefore(hourFromNow.getTime()).count());
+    assertEquals(1, query.endTimeAfter(hourAgo.getTime()).count());
+    assertEquals(0, query.endTimeAfter(hourFromNow.getTime()).count());
+    assertEquals(1, query.endTimeBefore(hourFromNow.getTime()).endTimeAfter(hourAgo.getTime()).count());
   }
 
   @Test
@@ -170,6 +202,19 @@ public class HistoricIncidentQueryTest {
 
   @Test
   @Deployment(resources={"org/camunda/bpm/engine/test/api/runtime/oneFailingServiceProcess.bpmn20.xml"})
+  public void testQueryByIncidentMessageLike() {
+
+    startProcessInstance(PROCESS_DEFINITION_KEY);
+    HistoricIncidentQuery query = historyService.createHistoricIncidentQuery();
+
+    assertEquals(0, query.incidentMessageLike("exception").list().size());
+    assertEquals(1, query.incidentMessageLike("exception%").list().size());
+    assertEquals(1, query.incidentMessageLike("%xception%").list().size());
+  }
+
+
+  @Test
+  @Deployment(resources={"org/camunda/bpm/engine/test/api/runtime/oneFailingServiceProcess.bpmn20.xml"})
   public void testQueryByProcessDefinitionId() {
     startProcessInstance(PROCESS_DEFINITION_KEY);
 
@@ -212,8 +257,8 @@ public class HistoricIncidentQueryTest {
     Incident incident3 = runtimeService.createIncident("foo", instance3.getId(), "b");
 
     // when
-    List<HistoricIncident> incidents = historyService.createHistoricIncidentQuery()
-        .processDefinitionKeyIn("proc1", "proc2")
+    HistoricIncidentQuery query = historyService.createHistoricIncidentQuery();
+    List<HistoricIncident> incidents = query.processDefinitionKeyIn("proc1", "proc2")
         .orderByConfiguration()
         .asc()
         .list();
@@ -222,6 +267,10 @@ public class HistoricIncidentQueryTest {
     assertThat(incidents).hasSize(2);
     assertThat(incidents.get(0).getId()).isEqualTo(incident2.getId());
     assertThat(incidents.get(1).getId()).isEqualTo(incident3.getId());
+
+    assertEquals(0, query.processDefinitionKey("proc").list().size());
+    assertEquals(1, query.processDefinitionKey("proc1").list().size());
+    assertEquals(1, query.processDefinitionKey("proc2").list().size());
   }
 
   @Test
@@ -229,11 +278,9 @@ public class HistoricIncidentQueryTest {
     // given
     IncidentQuery incidentQuery = runtimeService.createIncidentQuery();
 
-    // then
-    exception.expect(ProcessEngineException.class);
-
-    // when
-    incidentQuery.processDefinitionKeyIn((String[]) null);
+    // when/then
+    assertThatThrownBy(() -> incidentQuery.processDefinitionKeyIn((String[]) null))
+      .isInstanceOf(ProcessEngineException.class);
   }
 
   @Test
@@ -241,11 +288,9 @@ public class HistoricIncidentQueryTest {
     // given
     IncidentQuery incidentQuery = runtimeService.createIncidentQuery();
 
-    // then
-    exception.expect(ProcessEngineException.class);
-
-    // when
-    incidentQuery.processDefinitionKeyIn((String) null);
+    // when/then
+    assertThatThrownBy(() -> incidentQuery.processDefinitionKeyIn((String) null))
+      .isInstanceOf(ProcessEngineException.class);
   }
 
   @Test
@@ -584,7 +629,7 @@ public class HistoricIncidentQueryTest {
       fail("Should fail");
     }
     catch (NullValueException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("jobDefinitionIds contains null value"));
+      assertThat(e.getMessage()).contains("jobDefinitionIds contains null value");
     }
   }
 
@@ -596,7 +641,7 @@ public class HistoricIncidentQueryTest {
       fail("Should fail");
     }
     catch (NullValueException e) {
-      assertThat(e.getMessage(), CoreMatchers.containsString("jobDefinitionIds is null"));
+      assertThat(e.getMessage()).contains("jobDefinitionIds is null");
     }
   }
 
@@ -625,6 +670,7 @@ public class HistoricIncidentQueryTest {
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByExecutionId().asc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByActivityId().asc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByProcessInstanceId().asc().list().size());
+    assertEquals(4, historyService.createHistoricIncidentQuery().orderByProcessDefinitionKey().asc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByProcessDefinitionId().asc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByCauseIncidentId().asc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByRootCauseIncidentId().asc().list().size());
@@ -637,6 +683,7 @@ public class HistoricIncidentQueryTest {
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByIncidentType().desc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByExecutionId().desc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByActivityId().desc().list().size());
+    assertEquals(4, historyService.createHistoricIncidentQuery().orderByProcessDefinitionKey().desc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByProcessInstanceId().desc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByProcessDefinitionId().desc().list().size());
     assertEquals(4, historyService.createHistoricIncidentQuery().orderByCauseIncidentId().desc().list().size());

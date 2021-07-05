@@ -16,24 +16,26 @@
  */
 package org.camunda.bpm.engine.test.bpmn.servicetask;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.Collections;
 import java.util.Map;
 
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.exception.NullValueException;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.test.Deployment;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
+import org.junit.Test;
 
 /**
  * @author Ronny Bräunlich
  *
  */
-public class ServiceTaskExpressionActivityBehaviorTest extends PluggableProcessEngineTestCase {
+public class ServiceTaskExpressionActivityBehaviorTest extends PluggableProcessEngineTest {
 
   @Deployment
+  @Test
   public void testExceptionThrownBySecondScopeServiceTaskIsNotHandled(){
     Map<Object, Object> beans = processEngineConfiguration.getBeans();
     beans.put("dummyServiceTask", new DummyServiceTask());
@@ -49,7 +51,7 @@ public class ServiceTaskExpressionActivityBehaviorTest extends PluggableProcessE
       fail("Shouldn't have received NullValueException");
     }
     catch(ProcessEngineException e){
-      assertThat(e.getMessage(), containsString("Invalid format"));
+      assertThat(e.getMessage()).contains("Invalid format");
     }
   }
 

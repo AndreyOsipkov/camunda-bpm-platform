@@ -16,12 +16,12 @@
  */
 package org.camunda.bpm.engine.test.api.identity;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import org.camunda.bpm.engine.IdentityService;
 import org.camunda.bpm.engine.OptimisticLockingException;
-import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.identity.Group;
 import org.camunda.bpm.engine.identity.User;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.test.util.ProcessEngineBootstrapRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
@@ -30,7 +30,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 /**
@@ -39,24 +38,15 @@ import org.junit.rules.RuleChain;
 public class IdentityServiceWithJdbcSimpleProcessingTest {
 
   @ClassRule
-  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule() {
-    @Override
-    public ProcessEngineConfiguration configureEngine(ProcessEngineConfigurationImpl configuration) {
-      configuration.setJdbcBatchProcessing(false);
-      return configuration;
-    }
-  };
-
-  public ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
-  public ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
+  public static ProcessEngineBootstrapRule bootstrapRule = new ProcessEngineBootstrapRule(configuration ->
+      configuration.setJdbcBatchProcessing(false));
+  protected ProvidedProcessEngineRule engineRule = new ProvidedProcessEngineRule(bootstrapRule);
+  protected ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule);
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
-
-  private IdentityService identityService;
+  protected IdentityService identityService;
 
   @Before
   public void init() {
@@ -84,10 +74,12 @@ public class IdentityServiceWithJdbcSimpleProcessingTest {
     user1.setFirstName("name one");
     identityService.saveUser(user1);
 
-    thrown.expect(OptimisticLockingException.class);
-
     user2.setFirstName("name two");
-    identityService.saveUser(user2);
+
+    // when/then
+    assertThatThrownBy(() -> identityService.saveUser(user2))
+      .isInstanceOf(OptimisticLockingException.class);
+
   }
 
   @Test
@@ -101,10 +93,11 @@ public class IdentityServiceWithJdbcSimpleProcessingTest {
     group1.setName("name one");
     identityService.saveGroup(group1);
 
-    thrown.expect(OptimisticLockingException.class);
-
     group2.setName("name two");
-    identityService.saveGroup(group2);
+
+    // when/then
+    assertThatThrownBy(() -> identityService.saveGroup(group2))
+      .isInstanceOf(OptimisticLockingException.class);
   }
 
 }

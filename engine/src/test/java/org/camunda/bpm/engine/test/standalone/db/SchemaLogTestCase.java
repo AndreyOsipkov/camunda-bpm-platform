@@ -16,8 +16,7 @@
  */
 package org.camunda.bpm.engine.test.standalone.db;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -30,6 +29,7 @@ import java.util.Map;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.impl.db.sql.DbSqlSessionFactory;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.springframework.core.io.Resource;
@@ -40,6 +40,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  *
  */
 public class SchemaLogTestCase {
+
   protected final static String BASE_PATH = "org/camunda/bpm/engine/db";
   protected final static String CREATE_SCRIPT_FOLDER = BASE_PATH + "/create";
   protected final static String UPGRADE_SCRIPT_FOLDER = BASE_PATH + "/upgrade";
@@ -47,7 +48,8 @@ public class SchemaLogTestCase {
   protected final static String[] DATABASES = DbSqlSessionFactory.SUPPORTED_DATABASES;
 
   @Rule
-  public ProcessEngineRule rule = new ProcessEngineRule();
+  public ProcessEngineRule rule = new ProvidedProcessEngineRule();
+
   public ProcessEngine processEngine;
 
   protected String folderPath;
@@ -68,7 +70,7 @@ public class SchemaLogTestCase {
     try {
       PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
       Resource[] resources = resolver.getResources("classpath:" + path + "/*");
-      assertThat(resources.length, greaterThan(0));
+      assertThat(resources.length).isGreaterThan(0);
       for (Resource res : resources) {
         files.add(res.getFilename());
       }

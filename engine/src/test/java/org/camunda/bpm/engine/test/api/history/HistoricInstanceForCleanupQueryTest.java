@@ -16,11 +16,15 @@
  */
 package org.camunda.bpm.engine.test.api.history;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang3.time.DateUtils;
 import org.camunda.bpm.engine.CaseService;
@@ -45,10 +49,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RequiredHistoryLevel(ProcessEngineConfiguration.HISTORY_FULL)
 public class HistoricInstanceForCleanupQueryTest {
@@ -57,8 +58,6 @@ public class HistoricInstanceForCleanupQueryTest {
   public ProcessEngineTestRule testRule = new ProcessEngineTestRule(engineRule);
   protected MigrationTestRule migrationRule = new MigrationTestRule(engineRule);
   protected BatchMigrationHelper helper = new BatchMigrationHelper(engineRule, migrationRule);
-
-  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(testRule).around(migrationRule);
 
@@ -83,7 +82,7 @@ public class HistoricInstanceForCleanupQueryTest {
   }
 
   protected void clearMetrics() {
-    Collection<Meter> meters = processEngineConfiguration.getMetricsRegistry().getMeters().values();
+    Collection<Meter> meters = processEngineConfiguration.getMetricsRegistry().getDbMeters().values();
     for (Meter meter : meters) {
       meter.getAndClear();
     }

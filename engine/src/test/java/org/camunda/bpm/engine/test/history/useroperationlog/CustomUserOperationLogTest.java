@@ -16,6 +16,10 @@
  */
 package org.camunda.bpm.engine.test.history.useroperationlog;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Arrays;
+import java.util.UUID;
 
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
@@ -25,21 +29,10 @@ import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
 import org.camunda.bpm.engine.impl.oplog.UserOperationLogContext;
 import org.camunda.bpm.engine.impl.oplog.UserOperationLogContextEntry;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyChange;
-import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineBootstrapRule;
-import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
-import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-
-import java.util.Arrays;
-import java.util.UUID;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 public class CustomUserOperationLogTest  {
 
@@ -80,6 +73,6 @@ public class CustomUserOperationLogTest  {
         });
 
         // and check its there
-        assertThat(historyService.createUserOperationLogQuery().taskId(TASK_ID).singleResult().getUserId(), is("kermit"));
+        assertThat(historyService.createUserOperationLogQuery().taskId(TASK_ID).singleResult().getUserId()).isEqualTo("kermit");
     }
 }

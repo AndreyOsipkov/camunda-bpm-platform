@@ -16,21 +16,22 @@
  */
 package org.camunda.bpm.engine.test.standalone.entity;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseSentryPartEntity;
 import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseSentryPartQueryImpl;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
+import org.junit.Test;
 
 /**
  * @author Kristin Polenz
  */
-public class CaseSentryPartEntityTest extends PluggableProcessEngineTestCase {
+public class CaseSentryPartEntityTest extends PluggableProcessEngineTest {
 
+  @Test
   public void testSentryWithTenantId() {
     CaseSentryPartEntity caseSentryPartEntity = new CaseSentryPartEntity();
     caseSentryPartEntity.setTenantId("tenant1");
@@ -38,7 +39,7 @@ public class CaseSentryPartEntityTest extends PluggableProcessEngineTestCase {
     insertCaseSentryPart(caseSentryPartEntity);
 
     caseSentryPartEntity = readCaseSentryPart();
-    assertThat(caseSentryPartEntity.getTenantId(), is("tenant1"));
+    assertThat(caseSentryPartEntity.getTenantId()).isEqualTo("tenant1");
 
     deleteCaseSentryPart(caseSentryPartEntity);
   }

@@ -4,12 +4,12 @@
   <artifactId>camunda-jboss-subsystem</artifactId>
   <packaging>jar</packaging>
 
-  <name>camunda BPM - jBoss7 Subsystem</name>
+  <name>Camunda Platform - jBoss7 Subsystem</name>
 
   <parent>
     <groupId>org.camunda.bpm.jboss</groupId>
     <artifactId>camunda-jboss</artifactId>
-    <version>7.13.0-SNAPSHOT</version>
+    <version>7.16.0-SNAPSHOT</version>
   </parent>
   
   <dependencyManagement>

@@ -16,9 +16,8 @@
  */
 package org.camunda.bpm.engine.test.api.multitenancy;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,11 +25,14 @@ import java.util.List;
 
 import org.camunda.bpm.engine.filter.Filter;
 import org.camunda.bpm.engine.impl.TaskQueryImpl;
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.task.TaskQuery;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
-public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCase {
+public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTest {
 
   protected static final String TENANT_ONE = "tenant1";
   protected static final String TENANT_TWO = "tenant2";
@@ -39,13 +41,14 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
   protected String filterId = null;
   protected final List<String> taskIds = new ArrayList<String>();
 
-  @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     createTaskWithoutTenantId();
     createTaskForTenant(TENANT_ONE);
     createTaskForTenant(TENANT_TWO);
   }
 
+  @Test
   public void testCreateFilterWithTenantIdCriteria() {
     TaskQuery query = taskService.createTaskQuery().tenantIdIn(TENANT_IDS);
     filterId = createFilter(query);
@@ -53,9 +56,10 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
     Filter savedFilter = filterService.getFilter(filterId);
     TaskQueryImpl savedQuery = savedFilter.getQuery();
 
-    assertThat(savedQuery.getTenantIds(), is(TENANT_IDS));
+    assertThat(savedQuery.getTenantIds()).isEqualTo(TENANT_IDS);
   }
 
+  @Test
   public void testCreateFilterWithNoTenantIdCriteria() {
     TaskQuery query = taskService.createTaskQuery().withoutTenantId();
     filterId = createFilter(query);
@@ -63,98 +67,109 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
     Filter savedFilter = filterService.getFilter(filterId);
     TaskQueryImpl savedQuery = savedFilter.getQuery();
 
-    assertThat(savedQuery.isTenantIdSet(), is(true));
-    assertThat(savedQuery.getTenantIds(), is(nullValue()));
+    assertThat(savedQuery.isWithoutTenantId()).isTrue();
+    assertThat(savedQuery.getTenantIds()).isNull();
   }
 
+  @Test
   public void testFilterTasksNoTenantIdSet() {
     TaskQuery query = taskService.createTaskQuery();
     filterId = createFilter(query);
 
-    assertThat(filterService.count(filterId), is(3L));
+    assertThat(filterService.count(filterId)).isEqualTo(3L);
   }
 
+  @Test
   public void testFilterTasksByTenantIds() {
     TaskQuery query = taskService.createTaskQuery().tenantIdIn(TENANT_IDS);
     filterId = createFilter(query);
 
-    assertThat(filterService.count(filterId), is(2L));
+    assertThat(filterService.count(filterId)).isEqualTo(2L);
 
     TaskQuery extendingQuery = taskService.createTaskQuery().taskName("testTask");
-    assertThat(filterService.count(filterId, extendingQuery), is(2L));
+    assertThat(filterService.count(filterId, extendingQuery)).isEqualTo(2L);
   }
 
+  @Test
   public void testFilterTasksWithoutTenantId() {
     TaskQuery query = taskService.createTaskQuery().withoutTenantId();
     filterId = createFilter(query);
 
-    assertThat(filterService.count(filterId), is(1L));
+    assertThat(filterService.count(filterId)).isEqualTo(1L);
 
     TaskQuery extendingQuery = taskService.createTaskQuery().taskName("testTask");
-    assertThat(filterService.count(filterId, extendingQuery), is(1L));
+    assertThat(filterService.count(filterId, extendingQuery)).isEqualTo(1L);
   }
 
+  @Test
   public void testFilterTasksByExtendingQueryWithTenantId() {
     TaskQuery query = taskService.createTaskQuery().taskName("testTask");
     filterId = createFilter(query);
 
     TaskQuery extendingQuery = taskService.createTaskQuery().tenantIdIn(TENANT_ONE);
-    assertThat(filterService.count(filterId, extendingQuery), is(1L));
+    assertThat(filterService.count(filterId, extendingQuery)).isEqualTo(1L);
   }
 
+  @Test
   public void testFilterTasksByExtendingQueryWithoutTenantId() {
     TaskQuery query = taskService.createTaskQuery().taskName("testTask");
     filterId = createFilter(query);
 
     TaskQuery extendingQuery = taskService.createTaskQuery().withoutTenantId();
-    assertThat(filterService.count(filterId, extendingQuery), is(1L));
+    assertThat(filterService.count(filterId, extendingQuery)).isEqualTo(1L);
   }
 
+  @Test
   public void testFilterTasksWithNoAuthenticatedTenants() {
     TaskQuery query = taskService.createTaskQuery();
     filterId = createFilter(query);
 
     identityService.setAuthentication("user", null, null);
 
-    assertThat(filterService.count(filterId), is(1L));
+    assertThat(filterService.count(filterId)).isEqualTo(1L);
   }
 
+  @Test
   public void testFilterTasksWithAuthenticatedTenant() {
     TaskQuery query = taskService.createTaskQuery();
     filterId = createFilter(query);
 
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
-    assertThat(filterService.count(filterId), is(2L));
+    assertThat(filterService.count(filterId)).isEqualTo(2L);
   }
 
+  @Test
   public void testFilterTasksWithAuthenticatedTenants() {
     TaskQuery query = taskService.createTaskQuery();
     filterId = createFilter(query);
 
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE, TENANT_TWO));
 
-    assertThat(filterService.count(filterId), is(3L));
+    assertThat(filterService.count(filterId)).isEqualTo(3L);
   }
 
+  @Test
   public void testFilterTasksByTenantIdNoAuthenticatedTenants() {
     TaskQuery query = taskService.createTaskQuery().tenantIdIn(TENANT_ONE);
     filterId = createFilter(query);
 
     identityService.setAuthentication("user", null, null);
 
-    assertThat(filterService.count(filterId), is(0L));
+    assertThat(filterService.count(filterId)).isEqualTo(0L);
   }
 
+  @Test
   public void testFilterTasksByTenantIdWithAuthenticatedTenant() {
     TaskQuery query = taskService.createTaskQuery().tenantIdIn(TENANT_ONE);
     filterId = createFilter(query);
 
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
-    assertThat(filterService.count(filterId), is(1L));
+    assertThat(filterService.count(filterId)).isEqualTo(1L);
   }
 
+  @Test
   public void testFilterTasksByExtendingQueryWithTenantIdNoAuthenticatedTenants() {
     TaskQuery query = taskService.createTaskQuery().taskName("testTask");
     filterId = createFilter(query);
@@ -162,9 +177,10 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
     identityService.setAuthentication("user", null, null);
 
     TaskQuery extendingQuery = taskService.createTaskQuery().tenantIdIn(TENANT_ONE);
-    assertThat(filterService.count(filterId, extendingQuery), is(0L));
+    assertThat(filterService.count(filterId, extendingQuery)).isEqualTo(0L);
   }
 
+  @Test
   public void testFilterTasksByExtendingQueryWithTenantIdAuthenticatedTenant() {
     TaskQuery query = taskService.createTaskQuery().taskName("testTask");
     filterId = createFilter(query);
@@ -172,9 +188,10 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
     identityService.setAuthentication("user", null, Arrays.asList(TENANT_ONE));
 
     TaskQuery extendingQuery = taskService.createTaskQuery().tenantIdIn(TENANT_ONE);
-    assertThat(filterService.count(filterId, extendingQuery), is(1L));
+    assertThat(filterService.count(filterId, extendingQuery)).isEqualTo(1L);
   }
 
+  @Test
   public void testFilterTasksWithDisabledTenantCheck() {
     TaskQuery query = taskService.createTaskQuery();
     filterId = createFilter(query);
@@ -182,7 +199,7 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
     processEngineConfiguration.setTenantCheckEnabled(false);
     identityService.setAuthentication("user", null, null);
 
-    assertThat(filterService.count(filterId), is(3L));
+    assertThat(filterService.count(filterId)).isEqualTo(3L);
   }
 
   protected void createTaskWithoutTenantId() {
@@ -209,8 +226,8 @@ public class MultiTenancyFilterServiceTest extends PluggableProcessEngineTestCas
     return filterService.saveFilter(newFilter).getId();
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
     filterService.deleteFilter(filterId);
     identityService.clearAuthentication();
     for(String taskId : taskIds) {

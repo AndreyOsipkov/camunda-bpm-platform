@@ -16,17 +16,18 @@
  */
 package org.camunda.bpm.engine.test.api.variables;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.nio.charset.Charset;
 import java.util.Scanner;
 
-import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
+import org.camunda.bpm.engine.test.util.PluggableProcessEngineTest;
 import org.camunda.bpm.engine.variable.VariableMap;
 import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.engine.variable.value.FileValue;
@@ -38,7 +39,7 @@ import org.junit.Test;
  * @author Ronny Bräunlich
  *
  */
-public class FileValueProcessSerializationTest extends PluggableProcessEngineTestCase {
+public class FileValueProcessSerializationTest extends PluggableProcessEngineTest {
 
   protected static final String ONE_TASK_PROCESS = "org/camunda/bpm/engine/test/api/variables/oneTaskProcess.bpmn20.xml";
 
@@ -56,12 +57,12 @@ public class FileValueProcessSerializationTest extends PluggableProcessEngineTes
     VariableInstance result = runtimeService.createVariableInstanceQuery().processInstanceIdIn(task.getProcessInstanceId()).singleResult();
     FileValue value = (FileValue) result.getTypedValue();
 
-    assertThat(value.getFilename(), is(filename));
-    assertThat(value.getMimeType(), is(type));
-    assertThat(value.getEncoding(), is("UTF-8"));
-    assertThat(value.getEncodingAsCharset(), is(Charset.forName("UTF-8")));
+    assertThat(value.getFilename()).isEqualTo(filename);
+    assertThat(value.getMimeType()).isEqualTo(type);
+    assertThat(value.getEncoding()).isEqualTo("UTF-8");
+    assertThat(value.getEncodingAsCharset()).isEqualTo(Charset.forName("UTF-8"));
     try (Scanner scanner = new Scanner(value.getValue())) {
-      assertThat(scanner.nextLine(), is("ABC"));
+      assertThat(scanner.nextLine()).isEqualTo("ABC");
     }
 
     // clean up
@@ -108,7 +109,7 @@ public class FileValueProcessSerializationTest extends PluggableProcessEngineTes
     FileValue fileVar = runtimeService.getVariableTyped(pi.getId(), "fileVar");
     assertNull(fileVar.getMimeType());
   }
-  
+
   @Test
   @Deployment(resources = ONE_TASK_PROCESS)
   public void testSerializeEmptyFileName() {

@@ -16,6 +16,7 @@
  */
 package org.camunda.bpm.engine.test.api.authorization.batch;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -43,7 +44,6 @@ import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.RequiredHistoryLevel;
 import org.camunda.bpm.engine.test.api.authorization.util.AuthorizationTestBaseRule;
 import org.camunda.bpm.engine.test.api.runtime.migration.models.ProcessModels;
-import org.camunda.bpm.engine.test.util.ProcessEngineBootstrapRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
 import org.junit.After;
@@ -51,7 +51,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 /**
@@ -67,9 +66,6 @@ public class HistoricBatchQueryAuthorizationTest {
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(engineRule).around(authRule).around(testHelper);
-
-  @Rule
-  public final ExpectedException thrown = ExpectedException.none();
 
   protected MigrationPlan migrationPlan;
   protected Batch batch1;
@@ -213,16 +209,19 @@ public class HistoricBatchQueryAuthorizationTest {
     // given
     String migrationOperationsTTL = "P0D";
     prepareBatch(migrationOperationsTTL);
-    // then
-    thrown.expect(AuthorizationException.class);
 
-    authRule.enableAuthorization("user");
-    try {
-      // when
-      engineRule.getHistoryService().createCleanableHistoricBatchReport().list();
-    } finally {
-      authRule.disableAuthorization();
-    }
+    assertThatThrownBy(() -> {
+      authRule.enableAuthorization("user");
+      try {
+        // when
+        engineRule.getHistoryService().createCleanableHistoricBatchReport().list();
+      } finally {
+        authRule.disableAuthorization();
+      }
+    })
+    // then
+      .isInstanceOf(AuthorizationException.class);
+
   }
 
   private void prepareBatch(String migrationOperationsTTL) {
